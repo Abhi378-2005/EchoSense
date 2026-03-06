@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'
+
 const mockStats = {
   totalConversations: 1284,
   todayConversations: 47,
@@ -37,7 +39,7 @@ export default function Dashboard() {
   const [liveCount, setLiveCount] = useState(3)
 
   useEffect(() => {
-    axios.get('http://localhost:5000/api/complaints')
+    axios.get(`${BACKEND_URL}/api/complaints`)
       .then(res => setComplaints(res.data.complaints))
       .catch(() => {})
 

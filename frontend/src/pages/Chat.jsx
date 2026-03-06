@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { io } from 'socket.io-client'
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'
+
 const quickActions = [
   { icon: '💰', label: 'Account Balance' },
   { icon: '📋', label: 'Mini Statement' },
@@ -66,7 +68,7 @@ export default function Chat() {
   }, [messages])
 
   useEffect(() => {
-    socketRef.current = io('http://localhost:5000')
+    socketRef.current = io(BACKEND_URL)
 
     socketRef.current.on('agent_joined', (data) => {
       setEscalating(false)
@@ -128,7 +130,7 @@ export default function Chat() {
     setLoading(true)
     try {
       const history = messages.map(m => ({ role: m.role, content: m.content }))
-      const res = await axios.post('http://localhost:5000/api/chat', {
+      const res = await axios.post(`${BACKEND_URL}/api/chat`, {
         message: userMsg, history, language
       })
       const reply = res.data.reply
@@ -148,7 +150,7 @@ export default function Chat() {
     if (!complaintCategory || !complaintDesc.trim()) return
     setComplaintLoading(true)
     try {
-      const res = await axios.post('http://localhost:5000/api/complaints', {
+      const res = await axios.post(`${BACKEND_URL}/api/complaints`, {
         category: complaintCategory,
         description: complaintDesc,
         language
