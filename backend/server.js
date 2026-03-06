@@ -11,11 +11,36 @@ dotenv.config()
 const app = express()
 const httpServer = createServer(app)
 
+// CORS configuration
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || '*'
+
+const corsOptions = {
+  origin: FRONTEND_ORIGIN === '*' ? true : FRONTEND_ORIGIN,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  credentials: true
+}
+
 const io = new Server(httpServer, {
-  cors: { origin: 'http://localhost:5173', methods: ['GET', 'POST'] }
+  cors: {
+    origin: corsOptions.origin,
+    methods: corsOptions.methods
+  }
 })
 
-app.use(cors({ origin: 'http://localhost:5173' }))
+// Basic request logging for debugging
+app.use((req, res, next) => {
+  const start = Date.now()
+  console.log(`➡️  ${req.method} ${req.originalUrl}`)
+
+  res.on('finish', () => {
+    const duration = Date.now() - start
+    console.log(`⬅️  ${req.method} ${req.originalUrl} ${res.statusCode} - ${duration}ms`)
+  })
+
+  next()
+})
+
+app.use(cors(corsOptions))
 app.use(express.json())
 app.use('/api/chat', chatRoute)
 app.use('/api/complaints', complaintRoute)
@@ -36,7 +61,7 @@ io.on('connection', (socket) => {
   console.log('🔌 Client connected:', socket.id)
 
   socket.on('escalate_to_agent', (data) => {
-    console.log('🚨 Escalation request from:', socket.id)
+    console.log('🚨 Escalation request from:', socket.id, 'payload:', data)
     
     // Simulate agent connecting after 3 seconds
     setTimeout(() => {
@@ -49,7 +74,7 @@ io.on('connection', (socket) => {
   })
 
   socket.on('message_to_agent', (data) => {
-    console.log('💬 Message to agent:', data.message)
+    console.log('💬 Message to agent from', socket.id, 'message:', data.message)
     
     // Simulate agent typing then responding
     setTimeout(() => {
