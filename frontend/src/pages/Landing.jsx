@@ -1,20 +1,7 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-const languages = [
-  { code: 'en', label: 'English', native: 'English' },
-  { code: 'hi', label: 'Hindi', native: 'हिंदी' },
-  { code: 'mr', label: 'Marathi', native: 'मराठी' },
-]
-
 export default function Landing() {
-  const [selected, setSelected] = useState(null)
-  const [hovered, setHovered] = useState(null)
   const navigate = useNavigate()
-
-  const handleContinue = () => {
-    if (selected) navigate('/chat', { state: { language: selected } })
-  }
 
   return (
     <div style={{
@@ -88,57 +75,35 @@ export default function Landing() {
           Your AI Banking Assistant — Available 24/7
         </p>
 
-        {/* Language Selection */}
-        <p style={{ color: '#aaa', marginBottom: '1rem', fontSize: '0.9rem', letterSpacing: '0.08em' }}>
-          SELECT YOUR LANGUAGE
-        </p>
-
-        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginBottom: '2.5rem', flexWrap: 'wrap' }}>
-          {languages.map(lang => (
-            <button
-              key={lang.code}
-              onClick={() => setSelected(lang.code)}
-              onMouseEnter={() => setHovered(lang.code)}
-              onMouseLeave={() => setHovered(null)}
-              style={{
-                padding: '1rem 2rem', borderRadius: '12px',
-                border: selected === lang.code
-                  ? '2px solid #1e64ff'
-                  : hovered === lang.code
-                  ? '2px solid rgba(30,100,255,0.5)'
-                  : '2px solid rgba(255,255,255,0.1)',
-                background: selected === lang.code
-                  ? 'rgba(30,100,255,0.2)'
-                  : hovered === lang.code
-                  ? 'rgba(255,255,255,0.05)'
-                  : 'rgba(255,255,255,0.03)',
-                color: '#fff', cursor: 'pointer',
-                transition: 'all 0.2s ease', minWidth: '130px'
-              }}
-            >
-              <div style={{ fontSize: '1.3rem', marginBottom: '0.3rem' }}>{lang.native}</div>
-              <div style={{ fontSize: '0.75rem', color: '#888' }}>{lang.label}</div>
-            </button>
-          ))}
+        <div style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'center' }}>
+          <div style={{
+            background: 'rgba(99,102,241,0.15)',
+            border: '1px solid rgba(99,102,241,0.4)',
+            borderRadius: '20px',
+            padding: '10px 24px',
+            color: '#a5b4fc',
+            fontSize: '14px',
+            fontWeight: '600',
+            textAlign: 'center'
+          }}>
+            Supports all 22 Indian Languages — Hindi, Marathi, Tamil & more
+          </div>
         </div>
 
         {/* Continue Button */}
         <button
-          onClick={handleContinue}
-          disabled={!selected}
+          onClick={() => navigate('/chat', { state: { language: 'en' } })}
           style={{
             padding: '1rem 3rem', borderRadius: '50px', border: 'none',
-            background: selected
-              ? 'linear-gradient(135deg, #1e64ff, #7c3aed)'
-              : 'rgba(255,255,255,0.1)',
-            color: selected ? '#fff' : '#555',
+            background: 'linear-gradient(135deg, #1e64ff, #7c3aed)',
+            color: '#fff',
             fontSize: '1rem', fontWeight: '600',
-            cursor: selected ? 'pointer' : 'not-allowed',
+            cursor: 'pointer',
             transition: 'all 0.3s ease', letterSpacing: '0.05em',
-            boxShadow: selected ? '0 0 30px rgba(30,100,255,0.4)' : 'none'
+            boxShadow: '0 0 30px rgba(30,100,255,0.4)'
           }}
         >
-          {selected ? 'Get Started' : 'Select a Language'}
+          Get Started
         </button>
 
         {/* Features row */}
