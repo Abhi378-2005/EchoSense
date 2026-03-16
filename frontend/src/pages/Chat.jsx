@@ -533,6 +533,16 @@ export default function Chat() {
             </span>
           </div>
         )}
+        {/* Powered by Sarvam AI badge */}
+        <div style={{
+          textAlign: 'center',
+          fontSize: '11px',
+          color: 'rgba(255,255,255,0.3)',
+          padding: '4px',
+          marginTop: '4px'
+        }}>
+          Powered by Sarvam AI  •  22 Indian Languages Supported
+        </div>
       </div>
 
       {/* Complaint Modal */}

@@ -1,1 +1,8 @@
 @import "tailwindcss";
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .chat-container { padding: 8px !important; }
+  .message-bubble { font-size: 13px !important; }
+  .quick-actions { flex-wrap: wrap; gap: 6px; }
+}
