@@ -97,6 +97,17 @@ export default function Chat() {
     return () => socketRef.current.disconnect()
   }, [])
 
+  // Auto-detect language from text
+  const detectLanguage = (text) => {
+    const hindiPattern = /[\u0900-\u097F]/
+    const marathiWords = ['आहे', 'आहेत', 'मला', 'तुम्ही', 'कसे', 'नाही', 'हवे', 'सांगा']
+    if (hindiPattern.test(text)) {
+      const isMarathi = marathiWords.some(w => text.includes(w))
+      return isMarathi ? 'mr-IN' : 'hi-IN'
+    }
+    return 'en-IN'
+  }
+
   const sendMessage = async (text) => {
     const userMsg = text || input.trim()
     if (!userMsg) return
@@ -218,25 +229,34 @@ export default function Chat() {
     socketRef.current.emit('escalate_to_agent', { language })
   }
 
+  // Updated speak — auto detects language of AI response
   const speak = (text) => {
     if (!window.speechSynthesis) return
     window.speechSynthesis.cancel()
     const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang = language === 'hi' ? 'hi-IN' : language === 'mr' ? 'mr-IN' : 'en-IN'
+    const detectedLang = detectLanguage(text)
+    utterance.lang = detectedLang
     utterance.rate = 0.9
     utterance.onstart = () => setSpeaking(true)
     utterance.onend = () => setSpeaking(false)
     window.speechSynthesis.speak(utterance)
   }
 
+  // Updated startListening — uses hi-IN for best Indian language recognition in Chrome
   const startListening = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SpeechRecognition) return alert('Voice not supported in this browser')
     const recognition = new SpeechRecognition()
-    recognition.lang = language === 'hi' ? 'hi-IN' : language === 'mr' ? 'mr-IN' : 'en-IN'
+    recognition.lang = 'hi-IN'
+    recognition.continuous = false
+    recognition.interimResults = false
     recognition.onstart = () => setListening(true)
     recognition.onend = () => setListening(false)
-    recognition.onresult = (e) => setInput(e.results[0][0].transcript)
+    recognition.onresult = (e) => {
+      const transcript = e.results[0][0].transcript
+      setInput(transcript)
+    }
+    recognition.onerror = () => setListening(false)
     recognition.start()
   }
 
@@ -301,10 +321,11 @@ export default function Chat() {
               Live Support
             </div>
           )}
+          {/* Language badge — shows auto-detect instead of fixed language */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 8px #4ade80' }} />
             <span style={{ color: '#888', fontSize: '0.8rem' }}>
-              {language === 'hi' ? 'हिंदी' : language === 'mr' ? 'मराठी' : 'English'}
+              Auto Language
             </span>
           </div>
         </div>
@@ -480,12 +501,7 @@ export default function Chat() {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-            placeholder={
-              agentMode ? 'Message live agent...'
-              : language === 'hi' ? 'अपना संदेश लिखें...'
-              : language === 'mr' ? 'तुमचा संदेश लिहा...'
-              : 'Type your message...'
-            }
+            placeholder={agentMode ? 'Message live agent...' : 'Type in any language — Hindi, Marathi, English...'}
             style={{
               flex: 1, background: 'transparent', border: 'none',
               color: '#fff', fontSize: '0.95rem', outline: 'none'
@@ -526,6 +542,7 @@ export default function Chat() {
               fontSize: '1.1rem', transition: 'all 0.2s ease'
             }}>➤</button>
         </div>
+
         {agentMode && (
           <div style={{ textAlign: 'center', marginTop: '0.75rem' }}>
             <span style={{ fontSize: '0.75rem', color: '#4ade80' }}>
@@ -533,6 +550,14 @@ export default function Chat() {
             </span>
           </div>
         )}
+
+        {/* Powered by badge */}
+        <div style={{
+          textAlign: 'center', fontSize: '11px',
+          color: 'rgba(255,255,255,0.25)', paddingTop: '6px'
+        }}>
+          Powered by Groq AI • Supports Hindi, Marathi, English & all Indian Languages
+        </div>
       </div>
 
       {/* Complaint Modal */}
@@ -756,6 +781,11 @@ export default function Chat() {
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+        @media (max-width: 768px) {
+          .chat-container { padding: 8px !important; }
+          .message-bubble { font-size: 13px !important; }
+          .quick-actions { flex-wrap: wrap; gap: 6px; }
+        }
       `}</style>
     </div>
   )
