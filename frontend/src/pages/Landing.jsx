@@ -1,16 +1,25 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 const languages = [
-  { code: 'en', label: 'English', native: 'English' },
-  { code: 'hi', label: 'Hindi', native: 'हिंदी' },
-  { code: 'mr', label: 'Marathi', native: 'मराठी' },
+  { code: 'en', label: 'English', native: 'English', sub: 'Continue in English' },
+  { code: 'hi', label: 'Hindi', native: 'हिंदी', sub: 'हिंदी में जारी रखें' },
+  { code: 'mr', label: 'Marathi', native: 'मराठी', sub: 'मराठीत सुरू ठेवा' },
+]
+
+const features = [
+  { icon: '🎙️', label: 'Voice Enabled' },
+  { icon: '🔒', label: 'Bank-Grade Security' },
+  { icon: '⚡', label: 'Instant AI Response' },
+  { icon: '🌐', label: '22 Indian Languages' },
 ]
 
 export default function Landing() {
   const [selected, setSelected] = useState(null)
-  const [hovered, setHovered] = useState(null)
+  const [mounted, setMounted] = useState(false)
   const navigate = useNavigate()
+
+  useEffect(() => { setTimeout(() => setMounted(true), 100) }, [])
 
   const handleContinue = () => {
     if (selected) navigate('/chat', { state: { language: selected } })
@@ -18,184 +27,101 @@ export default function Landing() {
 
   return (
     <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0a0a0a 0%, #0d1b2a 50%, #0a0a0a 100%)',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontFamily: "'Segoe UI', sans-serif",
-      position: 'relative',
-      overflow: 'hidden'
+      minHeight: '100vh', background: '#f4f6fb',
+      display: 'flex', flexDirection: 'column',
+      fontFamily: "'Georgia', serif", position: 'relative', overflow: 'hidden',
     }}>
+      <div style={{ position: 'absolute', top: '-200px', right: '-200px', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(37,99,235,0.06) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: '-150px', left: '-150px', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(26,58,107,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
-      {/* Animated background orbs */}
-      <div style={{
-        position: 'absolute', width: '500px', height: '500px',
-        borderRadius: '50%', top: '-100px', left: '-100px',
-        background: 'radial-gradient(circle, rgba(30,100,255,0.15) 0%, transparent 70%)',
-        animation: 'pulse 4s ease-in-out infinite'
-      }} />
-      <div style={{
-        position: 'absolute', width: '400px', height: '400px',
-        borderRadius: '50%', bottom: '-80px', right: '-80px',
-        background: 'radial-gradient(circle, rgba(100,30,255,0.12) 0%, transparent 70%)',
-        animation: 'pulse 6s ease-in-out infinite reverse'
-      }} />
-
-      {/* Union Bank Badge — top center */}
-      <div style={{
-        position: 'absolute', top: '2rem', left: '50%',
-        transform: 'translateX(-50%)',
-        display: 'flex', alignItems: 'center', gap: '0.5rem',
-        whiteSpace: 'nowrap'
-      }}>
-        <div style={{
-          width: '10px', height: '10px', borderRadius: '50%',
-          background: '#1e64ff', boxShadow: '0 0 10px #1e64ff'
-        }} />
-        <span style={{ color: '#888', fontSize: '0.85rem', letterSpacing: '0.1em' }}>
-          UNION BANK OF INDIA — AI SELF SERVICE
-        </span>
-      </div>
-
-      {/* Main content */}
-      <div style={{ textAlign: 'center', zIndex: 1, padding: '2rem' }}>
-
-        {/* Chatbot Avatar Orb */}
-        <div style={{
-          width: '100px', height: '100px', borderRadius: '50%',
-          background: 'linear-gradient(135deg, #1e64ff, #7c3aed)',
-          margin: '4rem auto 2rem',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '2.8rem',
-          boxShadow: '0 0 40px rgba(30,100,255,0.4), 0 0 80px rgba(124,58,237,0.2)',
-          animation: 'glow 3s ease-in-out infinite'
-        }}>
-          🤖
+      <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.25rem 3rem', borderBottom: '1px solid rgba(0,0,0,0.06)', background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', position: 'relative', zIndex: 10, opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(-10px)', transition: 'all 0.6s ease' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'linear-gradient(135deg, #1a3a6b, #2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', boxShadow: '0 4px 12px rgba(37,99,235,0.3)' }}>🏦</div>
+          <div>
+            <div style={{ fontWeight: '700', fontSize: '0.95rem', color: '#1a1a2e' }}>Union Bank of India</div>
+            <div style={{ fontSize: '0.65rem', color: '#8892a4', letterSpacing: '0.08em', fontFamily: 'system-ui', textTransform: 'uppercase' }}>AI Self Service Portal</div>
+          </div>
         </div>
+        <button onClick={() => navigate('/dashboard')} style={{ padding: '0.5rem 1.25rem', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'transparent', color: '#64748b', cursor: 'pointer', fontSize: '0.82rem', fontFamily: 'system-ui', fontWeight: '500', transition: 'all 0.2s ease' }} onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#1e293b' }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#64748b' }}>Analytics Dashboard →</button>
+      </nav>
 
-        <h1 style={{
-          fontSize: '3.5rem', fontWeight: '800',
-          background: 'linear-gradient(135deg, #ffffff 0%, #a0b4ff 100%)',
-          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-          marginBottom: '0.5rem', letterSpacing: '-0.02em'
-        }}>
-          EchoSense
-        </h1>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '3rem 2rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5rem', maxWidth: '1080px', width: '100%', alignItems: 'center' }}>
 
-        <p style={{ color: '#888', fontSize: '1.1rem', marginBottom: '3rem', letterSpacing: '0.05em' }}>
-          Your AI Banking Assistant — Available 24/7
-        </p>
-
-        {/* Language Selection */}
-        <p style={{ color: '#aaa', marginBottom: '1rem', fontSize: '0.9rem', letterSpacing: '0.08em' }}>
-          SELECT YOUR LANGUAGE
-        </p>
-
-        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginBottom: '2.5rem', flexWrap: 'wrap' }}>
-          {languages.map(lang => (
-            <button
-              key={lang.code}
-              onClick={() => setSelected(lang.code)}
-              onMouseEnter={() => setHovered(lang.code)}
-              onMouseLeave={() => setHovered(null)}
-              style={{
-                padding: '1rem 2rem', borderRadius: '12px',
-                border: selected === lang.code
-                  ? '2px solid #1e64ff'
-                  : hovered === lang.code
-                  ? '2px solid rgba(30,100,255,0.5)'
-                  : '2px solid rgba(255,255,255,0.1)',
-                background: selected === lang.code
-                  ? 'rgba(30,100,255,0.2)'
-                  : hovered === lang.code
-                  ? 'rgba(255,255,255,0.05)'
-                  : 'rgba(255,255,255,0.03)',
-                color: '#fff', cursor: 'pointer',
-                transition: 'all 0.2s ease', minWidth: '130px'
-              }}
-            >
-              <div style={{ fontSize: '1.3rem', marginBottom: '0.3rem' }}>{lang.native}</div>
-              <div style={{ fontSize: '0.75rem', color: '#888' }}>{lang.label}</div>
-            </button>
-          ))}
-        </div>
-
-        {/* Continue Button */}
-        <button
-          onClick={handleContinue}
-          disabled={!selected}
-          style={{
-            padding: '1rem 3rem', borderRadius: '50px', border: 'none',
-            background: selected
-              ? 'linear-gradient(135deg, #1e64ff, #7c3aed)'
-              : 'rgba(255,255,255,0.1)',
-            color: selected ? '#fff' : '#555',
-            fontSize: '1rem', fontWeight: '600',
-            cursor: selected ? 'pointer' : 'not-allowed',
-            transition: 'all 0.3s ease', letterSpacing: '0.05em',
-            boxShadow: selected ? '0 0 30px rgba(30,100,255,0.4)' : 'none'
-          }}
-        >
-          {selected ? 'Get Started' : 'Select a Language'}
-        </button>
-
-        {/* Features row */}
-        <div style={{
-          display: 'flex', gap: '2rem', marginTop: '3rem',
-          justifyContent: 'center', flexWrap: 'wrap'
-        }}>
-          {[
-            { icon: '🎙️', label: 'Voice Enabled' },
-            { icon: '🔒', label: 'Secure & Private' },
-            { icon: '⚡', label: 'Instant Response' },
-            { icon: '🌐', label: 'Multilingual' },
-          ].map(f => (
-            <div key={f.label} style={{
-              display: 'flex', alignItems: 'center', gap: '0.4rem',
-              color: '#666', fontSize: '0.85rem'
-            }}>
-              <span>{f.icon}</span>
-              <span>{f.label}</span>
+          <div style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateX(0)' : 'translateX(-30px)', transition: 'all 0.8s ease 0.2s' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.35rem 0.9rem', borderRadius: '50px', background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.15)', marginBottom: '1.75rem' }}>
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e', animation: 'blink 1.5s ease-in-out infinite' }} />
+              <span style={{ fontSize: '0.72rem', color: '#2563eb', fontWeight: '600', letterSpacing: '0.08em', fontFamily: 'system-ui', textTransform: 'uppercase' }}>AI Assistant Online</span>
             </div>
-          ))}
-        </div>
+            <h1 style={{ fontSize: '3.6rem', fontWeight: '800', lineHeight: '1.1', color: '#0f172a', marginBottom: '1.25rem', letterSpacing: '-0.03em' }}>
+              Banking Help,<br />
+              <span style={{ background: 'linear-gradient(135deg, #1a3a6b 0%, #2563eb 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Instantly.</span>
+            </h1>
+            <p style={{ fontSize: '1.05rem', color: '#64748b', lineHeight: '1.8', marginBottom: '2.5rem', fontFamily: 'system-ui', maxWidth: '400px' }}>
+              EchoSense understands Hindi, Marathi, English and all 22 Indian languages. Get instant answers to all your banking queries — 24/7.
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
+              {features.map(f => (
+                <div key={f.label} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.45rem 0.9rem', borderRadius: '50px', background: '#fff', border: '1px solid #e2e8f0', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
+                  <span style={{ fontSize: '0.85rem' }}>{f.icon}</span>
+                  <span style={{ fontSize: '0.75rem', color: '#374151', fontFamily: 'system-ui', fontWeight: '500' }}>{f.label}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: '2.5rem', marginTop: '2.5rem', paddingTop: '2rem', borderTop: '1px solid #e2e8f0' }}>
+              {[{ value: '50K+', label: 'Customers Served' }, { value: '1.2s', label: 'Avg Response' }, { value: '94%', label: 'Satisfaction' }].map(s => (
+                <div key={s.label}>
+                  <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#1a3a6b', letterSpacing: '-0.02em' }}>{s.value}</div>
+                  <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontFamily: 'system-ui', marginTop: '0.2rem' }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
 
-        {/* Dashboard Link */}
-        <div style={{ marginTop: '1.5rem' }}>
-          <button
-            onClick={() => navigate('/dashboard')}
-            style={{
-              padding: '0.6rem 1.5rem', borderRadius: '50px',
-              border: '1px solid rgba(255,255,255,0.1)',
-              background: 'rgba(255,255,255,0.03)',
-              color: '#888', cursor: 'pointer', fontSize: '0.85rem',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.07)'
-              e.currentTarget.style.color = '#fff'
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.03)'
-              e.currentTarget.style.color = '#888'
-            }}
-          >
-            View Analytics Dashboard →
-          </button>
+          <div style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(30px)', transition: 'all 0.8s ease 0.4s' }}>
+            <div style={{ background: '#fff', borderRadius: '24px', padding: '2.5rem', boxShadow: '0 24px 64px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.06)' }}>
+              <div style={{ width: '60px', height: '60px', borderRadius: '18px', background: 'linear-gradient(135deg, #1a3a6b, #2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', marginBottom: '1.25rem', boxShadow: '0 8px 24px rgba(37,99,235,0.3)', animation: 'float 4s ease-in-out infinite' }}>🤖</div>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: '700', color: '#0f172a', marginBottom: '0.4rem', letterSpacing: '-0.02em' }}>Welcome to EchoSense</h2>
+              <p style={{ fontSize: '0.875rem', color: '#94a3b8', fontFamily: 'system-ui', marginBottom: '1.75rem' }}>Choose your language to get started</p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', marginBottom: '1.75rem' }}>
+                {languages.map((lang, i) => (
+                  <button key={lang.code} onClick={() => setSelected(lang.code)} style={{ padding: '0.9rem 1.2rem', borderRadius: '12px', border: selected === lang.code ? '2px solid #2563eb' : '2px solid #f1f5f9', background: selected === lang.code ? 'linear-gradient(135deg, rgba(37,99,235,0.05), rgba(26,58,107,0.03))' : '#fafbfc', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', transition: 'all 0.2s ease', opacity: mounted ? 1 : 0, transform: mounted ? 'translateX(0)' : 'translateX(20px)', transitionDelay: `${0.5 + i * 0.1}s` }}
+                    onMouseEnter={e => { if (selected !== lang.code) { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.background = '#f8fafc' } }}
+                    onMouseLeave={e => { if (selected !== lang.code) { e.currentTarget.style.borderColor = '#f1f5f9'; e.currentTarget.style.background = '#fafbfc' } }}>
+                    <div style={{ textAlign: 'left' }}>
+                      <div style={{ fontSize: '1rem', fontWeight: '700', color: selected === lang.code ? '#1a3a6b' : '#1e293b', marginBottom: '0.1rem' }}>{lang.native}</div>
+                      <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontFamily: 'system-ui' }}>{lang.sub}</div>
+                    </div>
+                    <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: selected === lang.code ? '2px solid #2563eb' : '2px solid #e2e8f0', background: selected === lang.code ? '#2563eb' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease', flexShrink: 0 }}>
+                      {selected === lang.code && <span style={{ color: '#fff', fontSize: '0.65rem', fontWeight: '800' }}>✓</span>}
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              <button onClick={handleContinue} disabled={!selected} style={{ width: '100%', padding: '0.95rem', borderRadius: '12px', border: 'none', background: selected ? 'linear-gradient(135deg, #1a3a6b, #2563eb)' : '#f1f5f9', color: selected ? '#fff' : '#94a3b8', fontSize: '0.95rem', fontWeight: '700', cursor: selected ? 'pointer' : 'not-allowed', fontFamily: 'system-ui', transition: 'all 0.3s ease', boxShadow: selected ? '0 8px 24px rgba(37,99,235,0.35)' : 'none' }}
+                onMouseEnter={e => { if (selected) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(37,99,235,0.45)' } }}
+                onMouseLeave={e => { if (selected) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(37,99,235,0.35)' } }}>
+                {selected ? 'Start Conversation →' : 'Choose a Language'}
+              </button>
+
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', marginTop: '1.25rem', paddingTop: '1.25rem', borderTop: '1px solid #f1f5f9' }}>
+                {['🔒 Secure', '⚡ Fast', '🇮🇳 India-First'].map(b => (
+                  <span key={b} style={{ fontSize: '0.7rem', color: '#94a3b8', fontFamily: 'system-ui' }}>{b}</span>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+
+      <div style={{ height: '3px', background: 'linear-gradient(90deg, #1a3a6b, #2563eb, #7c3aed, #2563eb, #1a3a6b)', backgroundSize: '200% 100%', animation: 'shimmer 3s linear infinite' }} />
 
       <style>{`
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); opacity: 0.8; }
-          50% { transform: scale(1.1); opacity: 1; }
-        }
-        @keyframes glow {
-          0%, 100% { box-shadow: 0 0 40px rgba(30,100,255,0.4), 0 0 80px rgba(124,58,237,0.2); }
-          50% { box-shadow: 0 0 60px rgba(30,100,255,0.6), 0 0 120px rgba(124,58,237,0.3); }
-        }
+        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
       `}</style>
     </div>
   )
