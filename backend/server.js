@@ -5,6 +5,7 @@ import { createServer } from 'http'
 import { Server } from 'socket.io'
 import chatRoute from './routes/chat.js'
 import complaintRoute from './routes/complaints.js'
+import analyticsRoute from './routes/analytics.js'   // ← ADDED
 
 dotenv.config()
 
@@ -44,6 +45,7 @@ app.use(cors(corsOptions))
 app.use(express.json())
 app.use('/api/chat', chatRoute)
 app.use('/api/complaints', complaintRoute)
+app.use('/api/analytics', analyticsRoute)             // ← ADDED
 
 app.get('/', (req, res) => {
   res.json({ status: '🟢 EchoSense Backend Live' })

@@ -1,243 +1,440 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
+// frontend/src/pages/Dashboard.jsx
+// Fetches live data from /api/analytics — no hardcoded numbers
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'
+import { useEffect, useState } from "react";
+import axios from "axios";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend, LineChart, Line, CartesianGrid,
+} from "recharts";
 
-const mockActivity = [
-  { type: 'complaint', message: 'New complaint filed — ATM Issue', time: '2 min ago', bg: '#fef2f2', dot: '#ef4444' },
-  { type: 'kyc', message: 'KYC verified for user ****4521', time: '5 min ago', bg: '#f0fdf4', dot: '#22c55e' },
-  { type: 'chat', message: 'Loan enquiry handled by AI', time: '8 min ago', bg: '#eff6ff', dot: '#3b82f6' },
-  { type: 'agent', message: 'Live agent escalation — Rajesh Kumar', time: '12 min ago', bg: '#fffbeb', dot: '#f59e0b' },
-  { type: 'chat', message: 'Account balance query resolved', time: '15 min ago', bg: '#eff6ff', dot: '#3b82f6' },
-  { type: 'kyc', message: 'KYC verified for user ****8834', time: '18 min ago', bg: '#f0fdf4', dot: '#22c55e' },
-  { type: 'complaint', message: 'Complaint UBI-45231 closed', time: '22 min ago', bg: '#fef2f2', dot: '#ef4444' },
-  { type: 'chat', message: 'Card services query handled', time: '25 min ago', bg: '#eff6ff', dot: '#3b82f6' },
-]
+const API = import.meta.env.VITE_BACKEND_URL || "https://echosense-backend-hwja.onrender.com";
 
-const quickActionStats = [
-  { label: 'Account Balance', count: 342, color: '#3b82f6' },
-  { label: 'Loan Enquiry', count: 289, color: '#8b5cf6' },
-  { label: 'Card Services', count: 198, color: '#f59e0b' },
-  { label: 'Branch Locator', count: 165, color: '#f97316' },
-  { label: 'File Complaint', count: 156, color: '#ef4444' },
-  { label: 'KYC Verification', count: 134, color: '#22c55e' },
-]
+// ─── Color palette ────────────────────────────────────────────────────────────
+const COLORS = {
+  blue: "#2563EB",
+  green: "#16A34A",
+  red: "#DC2626",
+  amber: "#D97706",
+  purple: "#7C3AED",
+  slate: "#475569",
+};
+const PIE_COLORS = [COLORS.blue, COLORS.green, COLORS.amber, COLORS.red, COLORS.purple];
 
-const statCards = (complaints, liveCount) => [
-  { label: 'Total Conversations', value: '1,284', sub: '+47 today', icon: '💬', color: '#3b82f6', bg: '#eff6ff', border: '#bfdbfe' },
-  { label: 'Complaints Resolved', value: '892', sub: `${complaints.length} this session`, icon: '✅', color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0' },
-  { label: 'KYC Completed', value: '634', sub: 'Verified accounts', icon: '🪪', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
-  { label: 'Avg Response Time', value: '1.2s', sub: 'AI powered', icon: '⚡', color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
-  { label: 'Satisfaction Rate', value: '94%', sub: 'Customer rating', icon: '⭐', color: '#ea580c', bg: '#fff7ed', border: '#fed7aa' },
-  { label: 'Live Users', value: liveCount.toString(), sub: 'Right now', icon: '👥', color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0' },
-]
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function StatCard({ title, value, subtitle, color = COLORS.blue, icon }) {
+  return (
+    <div style={{
+      background: "#fff",
+      border: "1px solid #E2E8F0",
+      borderRadius: 12,
+      padding: "20px 24px",
+      display: "flex",
+      flexDirection: "column",
+      gap: 6,
+      boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+    }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <span style={{ fontSize: 13, color: "#64748B", fontWeight: 500 }}>{title}</span>
+        <span style={{ fontSize: 22 }}>{icon}</span>
+      </div>
+      <div style={{ fontSize: 28, fontWeight: 700, color, fontFamily: "Georgia, serif" }}>{value}</div>
+      {subtitle && <div style={{ fontSize: 12, color: "#94A3B8" }}>{subtitle}</div>}
+    </div>
+  );
+}
+
+function SectionTitle({ children }) {
+  return (
+    <h2 style={{
+      fontSize: 16, fontWeight: 700, color: "#1E3A5F",
+      margin: "28px 0 12px", fontFamily: "Georgia, serif",
+      borderLeft: `4px solid ${COLORS.blue}`, paddingLeft: 10,
+    }}>
+      {children}
+    </h2>
+  );
+}
+
+function ChartCard({ title, children, height = 260 }) {
+  return (
+    <div style={{
+      background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12,
+      padding: "20px 24px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+    }}>
+      <div style={{ fontSize: 14, fontWeight: 600, color: "#374151", marginBottom: 16 }}>{title}</div>
+      <div style={{ height }}>{children}</div>
+    </div>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function Dashboard() {
-  const navigate = useNavigate()
-  const [complaints, setComplaints] = useState([])
-  const [liveCount, setLiveCount] = useState(3)
-  const [mounted, setMounted] = useState(false)
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    setTimeout(() => setMounted(true), 100)
-    axios.get(`${BACKEND_URL}/api/complaints`)
-      .then(res => setComplaints(res.data.complaints))
-      .catch(() => {})
-    const interval = setInterval(() => {
-      setLiveCount(prev => Math.max(1, prev + Math.floor(Math.random() * 3) - 1))
-    }, 3000)
-    return () => clearInterval(interval)
-  }, [])
+    axios.get(`${API}/api/analytics`)
+      .then(res => { setData(res.data); setLoading(false); })
+      .catch(() => { setError("Failed to load analytics."); setLoading(false); });
+  }, []);
+
+  if (loading) return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#F8FAFC" }}>
+      <div style={{ textAlign: "center" }}>
+        <div style={{ fontSize: 36, marginBottom: 12 }}>🏦</div>
+        <div style={{ color: "#64748B", fontSize: 15 }}>Loading live analytics…</div>
+      </div>
+    </div>
+  );
+
+  if (error) return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#F8FAFC" }}>
+      <div style={{ color: COLORS.red, fontSize: 15 }}>⚠️ {error}</div>
+    </div>
+  );
+
+  const { transactions: tx, loans, complaints, anomalies, accounts, recentActivity, meta } = data;
+
+  // ── Chart data shapes ──────────────────────────────────────────────────────
+  const txByTypeData = Object.entries(tx.byType).map(([name, value]) => ({ name, value }));
+  const loanStatusData = Object.entries(loans.byStatus).map(([name, value]) => ({ name, value }));
+  const loanTypeData = Object.entries(loans.byType).map(([name, value]) => ({ name, value }));
+  const feedbackData = Object.entries(complaints.byType).map(([name, value]) => ({ name, value }));
+  const anomalyData = [
+    { name: "Normal", value: anomalies.normal },
+    { name: "Flagged", value: anomalies.flagged },
+  ];
+  const resolutionData = Object.entries(complaints.resolutionByFeedbackType).map(
+    ([type, d]) => ({ type, Resolved: d.resolved, Pending: d.total - d.resolved })
+  );
+  const cardData = Object.entries(accounts.byCard).map(([name, value]) => ({ name, value }));
+  const monthlyData = tx.monthlyVolume.map(m => ({
+    month: m.month.slice(5), // "MM"
+    transactions: m.count,
+  }));
+
+  const fmt = (n) => n >= 1e7 ? `₹${(n / 1e7).toFixed(1)}Cr` : n >= 1e5 ? `₹${(n / 1e5).toFixed(1)}L` : `₹${Number(n).toLocaleString()}`;
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8f9fc', fontFamily: "'Georgia', 'Times New Roman', serif", color: '#1e293b' }}>
-
-      <div style={{ height: '4px', background: 'linear-gradient(90deg, #1e40af, #3b82f6, #1e40af)' }} />
-
-      <header style={{
-        padding: '1rem 2.5rem', background: 'white',
-        borderBottom: '1px solid #e2e8f0',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        position: 'sticky', top: 0, zIndex: 10,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+    <div style={{ minHeight: "100vh", background: "#F8FAFC", fontFamily: "Inter, sans-serif" }}>
+      {/* Header */}
+      <div style={{
+        background: "#1E3A5F", color: "#fff", padding: "18px 32px",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <button onClick={() => navigate('/')} style={{
-            padding: '0.5rem 1rem', borderRadius: '6px', border: '1px solid #e2e8f0',
-            background: 'white', color: '#64748b', cursor: 'pointer', fontSize: '0.85rem',
-            fontFamily: 'sans-serif', fontWeight: '500', transition: 'all 0.2s',
-          }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = '#3b82f6'}
-            onMouseLeave={e => e.currentTarget.style.borderColor = '#e2e8f0'}
-          >← Back</button>
-          <div style={{ width: '1px', height: '24px', background: '#e2e8f0' }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ fontSize: 26 }}>🏦</span>
           <div>
-            <div style={{ fontWeight: '700', fontSize: '1.1rem', color: '#0f172a' }}>EchoSense Analytics</div>
-            <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontFamily: 'sans-serif', letterSpacing: '0.05em' }}>UNION BANK OF INDIA — AI DASHBOARD</div>
+            <div style={{ fontFamily: "Georgia, serif", fontSize: 18, fontWeight: 700 }}>EchoSense Analytics</div>
+            <div style={{ fontSize: 12, color: "#93C5FD" }}>Union Bank of India — Live Dashboard</div>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.9rem', borderRadius: '50px', background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-            <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#22c55e', animation: 'pulse 2s infinite' }} />
-            <span style={{ fontSize: '0.8rem', color: '#15803d', fontFamily: 'sans-serif', fontWeight: '600' }}>{liveCount} Live Users</span>
-          </div>
-          <div style={{ padding: '0.4rem 0.9rem', borderRadius: '6px', background: '#eff6ff', border: '1px solid #bfdbfe', fontSize: '0.78rem', color: '#1d4ed8', fontFamily: 'sans-serif', fontWeight: '600' }}>
-            Today: March 19, 2026
-          </div>
+        <div style={{ fontSize: 12, color: "#93C5FD" }}>
+          {meta.totalCustomers.toLocaleString()} customers &nbsp;|&nbsp; Updated: {new Date(meta.generatedAt).toLocaleTimeString()}
         </div>
-      </header>
+      </div>
 
-      <main style={{ padding: '2rem 2.5rem', maxWidth: '1300px', margin: '0 auto' }}>
+      <div style={{ maxWidth: 1280, margin: "0 auto", padding: "24px 32px" }}>
 
-        {/* Stats Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '1rem', marginBottom: '1.75rem' }}>
-          {statCards(complaints, liveCount).map((stat, i) => (
-            <div key={stat.label} style={{
-              background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0',
-              padding: '1.25rem', boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-              opacity: mounted ? 1 : 0,
-              transform: mounted ? 'translateY(0)' : 'translateY(16px)',
-              transition: `all 0.5s ease ${i * 0.06}s`, cursor: 'default',
-            }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = stat.border; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)' }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.04)' }}
-            >
-              <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: stat.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', marginBottom: '0.9rem' }}>{stat.icon}</div>
-              <div style={{ fontSize: '1.75rem', fontWeight: '700', color: stat.color, marginBottom: '0.2rem', letterSpacing: '-0.02em' }}>{stat.value}</div>
-              <div style={{ fontSize: '0.78rem', color: '#475569', fontFamily: 'sans-serif', fontWeight: '500', marginBottom: '0.2rem' }}>{stat.label}</div>
-              <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontFamily: 'sans-serif' }}>{stat.sub}</div>
-            </div>
-          ))}
+        {/* ── KPI Cards ── */}
+        <SectionTitle>📊 Overview</SectionTitle>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+          <StatCard title="Total Customers" value={meta.totalCustomers.toLocaleString()} icon="👥" subtitle="Active accounts" />
+          <StatCard title="Total Transactions" value={tx.total.toLocaleString()} icon="💳" subtitle={`Avg ₹${tx.avgAmount.toLocaleString()}`} />
+          <StatCard title="Transaction Volume" value={fmt(tx.totalAmount)} icon="💰" color={COLORS.green} subtitle={`Deposits: ${fmt(tx.totalDeposits)}`} />
+          <StatCard title="Loan Approval Rate" value={`${loans.approvalRate}%`} icon="✅" color={COLORS.green} subtitle={`${loans.byStatus.Approved?.toLocaleString()} approved`} />
+          <StatCard title="Complaint Resolution" value={`${complaints.complaintResolutionRate}%`} icon="🎯" color={COLORS.amber} subtitle={`${complaints.pendingComplaints} pending`} />
+          <StatCard title="Anomalies Flagged" value={anomalies.flagged.toLocaleString()} icon="🚨" color={COLORS.red} subtitle={`${anomalies.rate}% of transactions`} />
         </div>
 
-        {/* Middle Row */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr 1fr', gap: '1rem', marginBottom: '1.75rem' }}>
+        {/* ── Transactions ── */}
+        <SectionTitle>💳 Transaction Analytics</SectionTitle>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+          <ChartCard title="Transactions by Type">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={txByTypeData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                  {txByTypeData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} />)}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </ChartCard>
 
-          {/* Quick Action Usage */}
-          <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1.5rem', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(16px)', transition: 'all 0.5s ease 0.35s' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: '700', color: '#0f172a' }}>Quick Action Usage</h3>
-              <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontFamily: 'sans-serif', letterSpacing: '0.05em' }}>THIS MONTH</span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {quickActionStats.map(stat => {
-                const max = Math.max(...quickActionStats.map(s => s.count))
-                const pct = (stat.count / max) * 100
-                return (
-                  <div key={stat.label}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-                      <span style={{ fontSize: '0.82rem', color: '#475569', fontFamily: 'sans-serif' }}>{stat.label}</span>
-                      <span style={{ fontSize: '0.82rem', color: stat.color, fontFamily: 'sans-serif', fontWeight: '700' }}>{stat.count}</span>
-                    </div>
-                    <div style={{ height: '6px', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', borderRadius: '3px', width: mounted ? `${pct}%` : '0%', background: stat.color, transition: 'width 1s ease 0.5s' }} />
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
+          <ChartCard title="Transaction Volume by Type (₹)">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={Object.entries(tx.amountByType).map(([name, value]) => ({ name, value }))}>
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                <YAxis tickFormatter={v => `₹${(v / 1e6).toFixed(0)}M`} tick={{ fontSize: 11 }} />
+                <Tooltip formatter={v => fmt(v)} />
+                <Bar dataKey="value" fill={COLORS.blue} radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartCard>
 
-          {/* Language Distribution */}
-          <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1.5rem', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(16px)', transition: 'all 0.5s ease 0.4s' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: '700', color: '#0f172a' }}>Languages</h3>
-              <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontFamily: 'sans-serif', letterSpacing: '0.05em' }}>DISTRIBUTION</span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              {[
-                { lang: 'English', native: 'English', pct: 67, color: '#3b82f6' },
-                { lang: 'Hindi', native: 'हिंदी', pct: 33, color: '#8b5cf6' },
-              ].map(l => (
-                <div key={l.lang}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                    <span style={{ fontSize: '0.88rem', color: '#334155' }}>{l.native}</span>
-                    <span style={{ fontSize: '0.88rem', color: l.color, fontFamily: 'sans-serif', fontWeight: '700' }}>{l.pct}%</span>
-                  </div>
-                  <div style={{ height: '10px', background: '#f1f5f9', borderRadius: '5px', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', borderRadius: '5px', width: mounted ? `${l.pct}%` : '0%', background: l.color, transition: 'width 1s ease 0.6s' }} />
-                  </div>
+          <ChartCard title="Monthly Transaction Volume">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={monthlyData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Line type="monotone" dataKey="transactions" stroke={COLORS.blue} strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </ChartCard>
+        </div>
+
+        {/* ── Loans ── */}
+        <SectionTitle>🏠 Loan Portfolio</SectionTitle>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+          <ChartCard title="Loan Status Breakdown">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={loanStatusData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                  <Cell fill={COLORS.green} />
+                  <Cell fill={COLORS.red} />
+                  <Cell fill={COLORS.slate} />
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </ChartCard>
+
+          <ChartCard title="Loans by Type">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={loanTypeData} layout="vertical">
+                <XAxis type="number" tick={{ fontSize: 11 }} />
+                <YAxis dataKey="name" type="category" tick={{ fontSize: 12 }} width={70} />
+                <Tooltip />
+                <Bar dataKey="value" fill={COLORS.purple} radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartCard>
+
+          <ChartCard title="Loan Amount by Type (₹)">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={Object.entries(loans.amountByType).map(([name, value]) => ({ name, value }))}>
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                <YAxis tickFormatter={v => `${(v / 1e9).toFixed(1)}B`} tick={{ fontSize: 11 }} />
+                <Tooltip formatter={v => fmt(v)} />
+                <Bar dataKey="value" fill={COLORS.amber} radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartCard>
+        </div>
+
+        {/* ── Complaints ── */}
+        <SectionTitle>📋 Complaint Analytics</SectionTitle>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+          <ChartCard title="Feedback Distribution">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={feedbackData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                  {feedbackData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} />)}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </ChartCard>
+
+          <ChartCard title="Resolution Rate by Feedback Type">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={resolutionData}>
+                <XAxis dataKey="type" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Bar dataKey="Resolved" fill={COLORS.green} stackId="a" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="Pending" fill={COLORS.red} stackId="a" radius={[4, 4, 0, 0]} />
+                <Legend />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartCard>
+
+          {/* Resolution KPI cards */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {Object.entries(complaints.resolutionByFeedbackType).map(([type, d]) => (
+              <div key={type} style={{
+                background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12,
+                padding: "14px 18px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+              }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>{type}</div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ fontSize: 12, color: "#64748B" }}>{d.resolved}/{d.total} resolved</div>
+                  <div style={{
+                    fontSize: 14, fontWeight: 700,
+                    color: parseFloat(d.rate) >= 50 ? COLORS.green : COLORS.red,
+                  }}>{d.rate}%</div>
                 </div>
-              ))}
-            </div>
-
-            <div style={{ height: '1px', background: '#f1f5f9', margin: '1.5rem 0' }} />
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-              <h3 style={{ fontSize: '0.88rem', fontWeight: '700', color: '#0f172a' }}>Session Complaints</h3>
-              <span style={{ padding: '0.15rem 0.5rem', borderRadius: '50px', background: complaints.length > 0 ? '#fef2f2' : '#f0fdf4', color: complaints.length > 0 ? '#ef4444' : '#16a34a', fontSize: '0.72rem', fontFamily: 'sans-serif', fontWeight: '600' }}>{complaints.length}</span>
-            </div>
-            {complaints.length === 0 ? (
-              <p style={{ color: '#94a3b8', fontSize: '0.8rem', fontFamily: 'sans-serif' }}>No complaints this session</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', maxHeight: '120px', overflowY: 'auto' }}>
-                {complaints.map((c, i) => (
-                  <div key={i} style={{ padding: '0.5rem 0.75rem', borderRadius: '6px', background: '#fafafa', border: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between' }}>
-                    <div>
-                      <div style={{ fontSize: '0.78rem', color: '#334155', fontFamily: 'sans-serif', fontWeight: '600' }}>{c.id}</div>
-                      <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontFamily: 'sans-serif' }}>{c.category}</div>
-                    </div>
-                    <span style={{ padding: '0.15rem 0.5rem', borderRadius: '4px', alignSelf: 'center', background: '#fffbeb', color: '#d97706', fontSize: '0.68rem', fontFamily: 'sans-serif', fontWeight: '600' }}>{c.status}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Live Activity */}
-          <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1.5rem', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(16px)', transition: 'all 0.5s ease 0.45s' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: '700', color: '#0f172a' }}>Live Activity</h3>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.2rem 0.6rem', borderRadius: '50px', background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-                <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#22c55e', animation: 'pulse 1.5s infinite' }} />
-                <span style={{ fontSize: '0.68rem', color: '#15803d', fontFamily: 'sans-serif', fontWeight: '700', letterSpacing: '0.05em' }}>LIVE</span>
-              </div>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {mockActivity.map((activity, i) => (
-                <div key={i} style={{
-                  display: 'flex', alignItems: 'center', gap: '0.75rem',
-                  padding: '0.6rem 0.75rem', borderRadius: '8px',
-                  background: activity.bg, border: `1px solid ${activity.dot}22`,
-                  opacity: mounted ? 1 : 0,
-                  transform: mounted ? 'translateX(0)' : 'translateX(12px)',
-                  transition: `all 0.4s ease ${0.5 + i * 0.05}s`,
-                }}>
-                  <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: activity.dot, flexShrink: 0 }} />
-                  <span style={{ flex: 1, fontSize: '0.78rem', color: '#334155', fontFamily: 'sans-serif' }}>{activity.message}</span>
-                  <span style={{ fontSize: '0.68rem', color: '#94a3b8', fontFamily: 'sans-serif', whiteSpace: 'nowrap' }}>{activity.time}</span>
+                <div style={{ marginTop: 6, background: "#F1F5F9", borderRadius: 99, height: 6, overflow: "hidden" }}>
+                  <div style={{
+                    width: `${d.rate}%`, height: "100%",
+                    background: parseFloat(d.rate) >= 50 ? COLORS.green : COLORS.red,
+                    borderRadius: 99,
+                  }} />
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Bar */}
-        <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1.25rem 1.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', opacity: mounted ? 1 : 0, transition: 'all 0.5s ease 0.55s' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ fontSize: '0.85rem' }}>🤖</span>
-            <span style={{ fontSize: '0.82rem', color: '#475569', fontFamily: 'sans-serif' }}>
-              <strong>EchoSense</strong> is handling queries autonomously · Groq AI (Llama 3.3 70B) · English & Hindi
-            </span>
-          </div>
-          <div style={{ display: 'flex', gap: '2rem' }}>
-            {[{ label: 'Uptime', value: '99.9%' }, { label: 'AI Accuracy', value: '96.2%' }, { label: 'Avg Handle Time', value: '48s' }].map(m => (
-              <div key={m.label} style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '0.95rem', fontWeight: '700', color: '#1e40af' }}>{m.value}</div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8', fontFamily: 'sans-serif', letterSpacing: '0.05em' }}>{m.label.toUpperCase()}</div>
               </div>
             ))}
           </div>
         </div>
-      </main>
 
-      <style>{`
-        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.3); } }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 2px; }
-      `}</style>
+        {/* ── Anomalies ── */}
+        <SectionTitle>🚨 Anomaly & Fraud Detection</SectionTitle>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+          <ChartCard title="Normal vs Flagged Transactions">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={anomalyData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(1)}%`}>
+                  <Cell fill={COLORS.green} />
+                  <Cell fill={COLORS.red} />
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </ChartCard>
+
+          <ChartCard title="Anomalies by Transaction Type">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={Object.entries(anomalies.byTransactionType).map(([name, value]) => ({ name, value }))}>
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Bar dataKey="value" fill={COLORS.red} radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartCard>
+
+          {/* Anomaly alert banner */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{
+              background: "#FEF2F2", border: `1px solid #FECACA`,
+              borderRadius: 12, padding: "18px 20px",
+            }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.red, marginBottom: 4 }}>
+                🚨 Anomaly Alert Summary
+              </div>
+              <div style={{ fontSize: 13, color: "#7F1D1D", lineHeight: 1.7 }}>
+                <div><b>{anomalies.flagged.toLocaleString()}</b> transactions flagged</div>
+                <div>Anomaly rate: <b>{anomalies.rate}%</b></div>
+                <div style={{ marginTop: 8, fontSize: 12, color: "#991B1B" }}>
+                  Flagged transactions are routed to the fraud review team automatically.
+                </div>
+              </div>
+            </div>
+            <div style={{
+              background: "#F0FDF4", border: `1px solid #BBF7D0`,
+              borderRadius: 12, padding: "18px 20px",
+            }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.green, marginBottom: 4 }}>
+                ✅ Clean Transactions
+              </div>
+              <div style={{ fontSize: 24, fontWeight: 700, color: COLORS.green }}>
+                {anomalies.normal.toLocaleString()}
+              </div>
+              <div style={{ fontSize: 12, color: "#166534" }}>
+                {(100 - anomalies.rate).toFixed(2)}% of all transactions are clean
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Accounts & Cards ── */}
+        <SectionTitle>👥 Account & Card Overview</SectionTitle>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+          <ChartCard title="Account Type Distribution">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={Object.entries(accounts.byType).map(([name, value]) => ({ name, value }))}
+                  dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                  <Cell fill={COLORS.blue} />
+                  <Cell fill={COLORS.purple} />
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </ChartCard>
+
+          <ChartCard title="Card Distribution">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={cardData}>
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                  {cardData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartCard>
+
+          <ChartCard title="Gender Breakdown">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={Object.entries(accounts.byGender).map(([name, value]) => ({ name, value }))}
+                  dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                  {Object.keys(accounts.byGender).map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} />)}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </ChartCard>
+        </div>
+
+        {/* ── Recent Activity Feed ── */}
+        <SectionTitle>⚡ Recent Activity Feed</SectionTitle>
+        <div style={{
+          background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12,
+          overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+        }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "#F8FAFC", borderBottom: "1px solid #E2E8F0" }}>
+                {["Transaction ID", "Customer", "Type", "Amount", "Account", "Date", "Status"].map(h => (
+                  <th key={h} style={{ padding: "12px 16px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "#64748B" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {recentActivity.map((row, i) => (
+                <tr key={i} style={{
+                  borderBottom: "1px solid #F1F5F9",
+                  background: row.anomaly ? "#FFF7F7" : "transparent",
+                }}>
+                  <td style={{ padding: "12px 16px", fontSize: 13, color: "#374151", fontFamily: "monospace" }}>#{row.id}</td>
+                  <td style={{ padding: "12px 16px", fontSize: 13, color: "#374151" }}>{row.name}</td>
+                  <td style={{ padding: "12px 16px" }}>
+                    <span style={{
+                      padding: "2px 10px", borderRadius: 99, fontSize: 11, fontWeight: 600,
+                      background: row.type === "Deposit" ? "#DCFCE7" : row.type === "Withdrawal" ? "#FEE2E2" : "#DBEAFE",
+                      color: row.type === "Deposit" ? COLORS.green : row.type === "Withdrawal" ? COLORS.red : COLORS.blue,
+                    }}>{row.type}</span>
+                  </td>
+                  <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 600, color: "#1E3A5F" }}>₹{Number(row.amount).toLocaleString()}</td>
+                  <td style={{ padding: "12px 16px", fontSize: 13, color: "#64748B" }}>{row.accountType}</td>
+                  <td style={{ padding: "12px 16px", fontSize: 12, color: "#94A3B8" }}>{row.date}</td>
+                  <td style={{ padding: "12px 16px" }}>
+                    {row.anomaly
+                      ? <span style={{ color: COLORS.red, fontSize: 12, fontWeight: 600 }}>🚨 Flagged</span>
+                      : <span style={{ color: COLORS.green, fontSize: 12 }}>✅ Clean</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div style={{ height: 40 }} />
+      </div>
     </div>
-  )
+  );
 }
