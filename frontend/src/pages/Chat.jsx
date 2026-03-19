@@ -61,6 +61,12 @@ export default function Chat() {
   const [kycLoading, setKycLoading] = useState(false)
   const [generatedOTP, setGeneratedOTP] = useState('')
 
+  // ── Customer ID state ─────────────────────────────────────────────────────
+  const [customerIdInput, setCustomerIdInput] = useState('')
+  const [customerData, setCustomerData] = useState(null)
+  const [customerLoading, setCustomerLoading] = useState(false)
+  const [customerError, setCustomerError] = useState('')
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
@@ -80,6 +86,25 @@ export default function Chat() {
     })
     return () => socketRef.current.disconnect()
   }, [])
+
+  // ── Fetch customer by ID ──────────────────────────────────────────────────
+  const fetchCustomer = async () => {
+    if (!customerIdInput.trim()) return
+    setCustomerLoading(true)
+    setCustomerError('')
+    try {
+      const res = await axios.get(`${BACKEND_URL}/api/analytics/customer/${customerIdInput.trim()}`)
+      setCustomerData(res.data)
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `Welcome back, ${res.data.name}! 👋\n\nI can now see your account details. Feel free to ask about your balance, loan status, card details, or recent transactions.`,
+        timestamp: new Date()
+      }])
+    } catch {
+      setCustomerError('Customer ID not found. Try 1–50000.')
+    }
+    setCustomerLoading(false)
+  }
 
   const sendMessage = async (text) => {
     const userMsg = text || input.trim()
@@ -102,7 +127,12 @@ export default function Chat() {
     setLoading(true)
     try {
       const history = messages.map(m => ({ role: m.role, content: m.content }))
-      const res = await axios.post(`${BACKEND_URL}/api/chat`, { message: userMsg, history, language })
+      const res = await axios.post(`${BACKEND_URL}/api/chat`, {
+        message: userMsg,
+        history,
+        language,
+        customerData,   // ← pass customer data to backend
+      })
       const reply = res.data.reply
       setMessages(prev => [...prev, { role: 'assistant', content: reply, timestamp: new Date() }])
       speak(reply)
@@ -231,6 +261,12 @@ export default function Chat() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {/* Customer badge when logged in */}
+          {customerData && (
+            <div style={{ padding: '0.3rem 0.8rem', borderRadius: '50px', background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#16a34a', fontSize: '0.75rem', fontFamily: 'sans-serif', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '600' }}>
+              👤 {customerData.name}
+            </div>
+          )}
           {agentMode && (
             <div style={{ padding: '0.3rem 0.8rem', borderRadius: '50px', background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#16a34a', fontSize: '0.75rem', fontFamily: 'sans-serif', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '600' }}>
               <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#22c55e', animation: 'pulse 1.5s infinite' }} />
@@ -259,6 +295,52 @@ export default function Chat() {
               {action.icon} {action.label}
             </button>
           ))}
+        </div>
+      )}
+
+      {/* ── Customer ID Banner ─────────────────────────────────────────────── */}
+      {!customerData && (
+        <div style={{
+          padding: '0.6rem 1.75rem', background: '#fffbeb',
+          borderBottom: '1px solid #fde68a', flexShrink: 0,
+          display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap',
+        }}>
+          <span style={{ fontSize: '0.78rem', color: '#92400e', fontFamily: 'sans-serif', fontWeight: '500', whiteSpace: 'nowrap' }}>
+            🔐 Enter Customer ID for personalised responses:
+          </span>
+          <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+            <input
+              type="number"
+              placeholder="e.g. 42"
+              value={customerIdInput}
+              onChange={e => { setCustomerIdInput(e.target.value); setCustomerError('') }}
+              onKeyDown={e => e.key === 'Enter' && fetchCustomer()}
+              style={{
+                padding: '0.3rem 0.7rem', borderRadius: '6px', border: `1px solid ${customerError ? '#fca5a5' : '#fde68a'}`,
+                background: 'white', color: '#1e293b', fontSize: '0.82rem',
+                outline: 'none', width: '90px', fontFamily: 'sans-serif',
+              }}
+            />
+            <button
+              onClick={fetchCustomer}
+              disabled={customerLoading || !customerIdInput.trim()}
+              style={{
+                padding: '0.3rem 0.8rem', borderRadius: '6px', border: 'none',
+                background: customerIdInput.trim() ? '#1e40af' : '#e2e8f0',
+                color: customerIdInput.trim() ? '#fff' : '#94a3b8',
+                fontSize: '0.78rem', fontFamily: 'sans-serif', fontWeight: '600',
+                cursor: customerIdInput.trim() ? 'pointer' : 'not-allowed',
+              }}
+            >
+              {customerLoading ? '...' : 'Verify →'}
+            </button>
+            {customerError && (
+              <span style={{ fontSize: '0.72rem', color: '#dc2626', fontFamily: 'sans-serif' }}>{customerError}</span>
+            )}
+          </div>
+          <span style={{ fontSize: '0.7rem', color: '#b45309', fontFamily: 'sans-serif', marginLeft: 'auto' }}>
+            Skip to chat without personalisation
+          </span>
         </div>
       )}
 

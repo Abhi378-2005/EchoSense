@@ -7,11 +7,23 @@ import { getSummary } from './analytics.js'
 const router = express.Router()
 
 router.post('/', async (req, res) => {
-  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })  // ← moved inside
-  const { message, language, history = [] } = req.body
+  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+  const { message, language, history = [], customerData } = req.body
 
-  // Grab live stats summary (empty string if not loaded yet — graceful fallback)
   const liveSummary = getSummary()
+
+  // Build personal context string if customer is identified
+  const personalContext = customerData ? `
+IDENTIFIED CUSTOMER (use this data to answer personal queries):
+- Name: ${customerData.name} (Customer ID: ${customerData.customerId})
+- Account Type: ${customerData.accountType}
+- Account Balance: Rs.${customerData.accountBalance}
+- Last Transaction: ${customerData.lastTransactionType} of Rs.${customerData.lastTransactionAmount} on ${customerData.lastTransactionDate}
+- Loan: ${customerData.loanType} loan of Rs.${customerData.loanAmount} — Status: ${customerData.loanStatus}
+- Card: ${customerData.cardType} | Credit Limit: Rs.${customerData.creditLimit} | Outstanding: Rs.${customerData.creditCardBalance}
+- Rewards Points: ${customerData.rewardsPoints}
+- City: ${customerData.city}
+Address the customer by their first name. When they ask about their balance, loan, card, or transactions — use the above data directly.` : ''
 
   const systemPrompt = `You are EchoSense, an intelligent AI assistant for Union Bank of India.
 You help customers with account queries, loans, FD/RD, card services, complaints, branch locator, KYC and mobile banking.
@@ -28,6 +40,8 @@ BEHAVIOUR RULES:
 - If unsure, offer to connect to a live agent
 - Keep responses to 3-4 sentences max
 - Always offer further help at the end
+
+${personalContext}
 
 ${liveSummary ? `LIVE BANK STATISTICS (use these when customers ask about bank performance, loans, complaints, or transactions):
 ${liveSummary}` : ''}`
