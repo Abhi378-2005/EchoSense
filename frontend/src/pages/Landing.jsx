@@ -68,7 +68,7 @@ export default function Landing() {
             background: 'linear-gradient(135deg, #1e40af, #3b82f6)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '1.1rem',
-          }}>🤖</div>
+          }}>🏦</div>
           <div>
             <div style={{ fontWeight: '700', fontSize: '1rem', color: '#1e293b', letterSpacing: '-0.01em' }}>Union Bank of India</div>
             <div style={{ fontSize: '0.68rem', color: '#94a3b8', letterSpacing: '0.08em', fontFamily: 'sans-serif' }}>AI SELF SERVICE PORTAL</div>
@@ -195,7 +195,7 @@ export default function Landing() {
                   background: 'linear-gradient(135deg, #1e40af, #3b82f6)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '1.4rem', boxShadow: '0 8px 24px rgba(30,64,175,0.3)',
-                }}>🤖</div>
+                }}>🏦</div>
                 <div>
                   <div style={{ fontWeight: '700', fontSize: '1.05rem', color: '#1e293b' }}>Welcome to EchoSense</div>
                   <div style={{ fontSize: '0.78rem', color: '#94a3b8', fontFamily: 'sans-serif' }}>Select your preferred language</div>
