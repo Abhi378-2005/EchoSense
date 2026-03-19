@@ -12,7 +12,6 @@ router.post('/', async (req, res) => {
 
   const liveSummary = getSummary()
 
-  // Build personal context string if customer is identified
   const personalContext = customerData ? `
 IDENTIFIED CUSTOMER (use this data to answer personal queries):
 - Name: ${customerData.name} (Customer ID: ${customerData.customerId})
@@ -22,8 +21,9 @@ IDENTIFIED CUSTOMER (use this data to answer personal queries):
 - Loan: ${customerData.loanType} loan of Rs.${customerData.loanAmount} — Status: ${customerData.loanStatus}
 - Card: ${customerData.cardType} | Credit Limit: Rs.${customerData.creditLimit} | Outstanding: Rs.${customerData.creditCardBalance}
 - Rewards Points: ${customerData.rewardsPoints}
-- City: ${customerData.city}
-Address the customer by their first name. When they ask about their balance, loan, card, or transactions — use the above data directly.` : ''
+- City: ${customerData.city} (Indian city — use this for branch locator queries)
+Address the customer by their first name. When they ask about their balance, loan, card, or transactions — use the above data directly.
+For branch locator, use the customer city above and suggest they visit the nearest Union Bank of India branch in that city or call 1800 22 2244.` : ''
 
   const systemPrompt = `You are EchoSense, an intelligent AI assistant for Union Bank of India.
 You help customers with account queries, loans, FD/RD, card services, complaints, branch locator, KYC and mobile banking.
@@ -40,6 +40,7 @@ BEHAVIOUR RULES:
 - If unsure, offer to connect to a live agent
 - Keep responses to 3-4 sentences max
 - Always offer further help at the end
+- For Branch Locator, always assume the customer is in India. If customer city is known, use it. Otherwise suggest visiting unionbankofindia.co.in or calling 1800 22 2244
 
 ${personalContext}
 

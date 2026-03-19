@@ -47,6 +47,7 @@ export default function Chat() {
   const [loading, setLoading] = useState(false)
   const [listening, setListening] = useState(false)
   const [speaking, setSpeaking] = useState(false)
+  const [muted, setMuted] = useState(false)                // ← mute state
   const [agentMode, setAgentMode] = useState(false)
   const [agentInfo, setAgentInfo] = useState(null)
   const [agentTyping, setAgentTyping] = useState(false)
@@ -131,7 +132,7 @@ export default function Chat() {
         message: userMsg,
         history,
         language,
-        customerData,   // ← pass customer data to backend
+        customerData,
       })
       const reply = res.data.reply
       setMessages(prev => [...prev, { role: 'assistant', content: reply, timestamp: new Date() }])
@@ -188,8 +189,9 @@ export default function Chat() {
     socketRef.current.emit('escalate_to_agent', { language })
   }
 
+  // ── Speak with mute support ───────────────────────────────────────────────
   const speak = (text) => {
-    if (!window.speechSynthesis) return
+    if (!window.speechSynthesis || muted) return   // ← respects mute
     window.speechSynthesis.cancel()
     const utterance = new SpeechSynthesisUtterance(text)
     utterance.lang = language === 'hi' ? 'hi-IN' : 'en-IN'
@@ -261,7 +263,7 @@ export default function Chat() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          {/* Customer badge when logged in */}
+          {/* Customer badge */}
           {customerData && (
             <div style={{ padding: '0.3rem 0.8rem', borderRadius: '50px', background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#16a34a', fontSize: '0.75rem', fontFamily: 'sans-serif', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '600' }}>
               👤 {customerData.name}
@@ -273,6 +275,22 @@ export default function Chat() {
               Live Support
             </div>
           )}
+          {/* ── Mute toggle button ── */}
+          <button
+            onClick={() => { setMuted(m => !m); window.speechSynthesis.cancel(); setSpeaking(false) }}
+            title={muted ? 'Unmute voice' : 'Mute voice'}
+            style={{
+              padding: '0.3rem 0.8rem', borderRadius: '50px',
+              background: muted ? '#FEF2F2' : '#F0FDF4',
+              border: `1px solid ${muted ? '#FECACA' : '#BBF7D0'}`,
+              color: muted ? '#DC2626' : '#16A34A',
+              fontSize: '0.75rem', fontFamily: 'sans-serif',
+              fontWeight: '600', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: '0.35rem',
+            }}
+          >
+            {muted ? '🔇 Muted' : '🔊 Voice On'}
+          </button>
           <div style={{ padding: '0.3rem 0.8rem', borderRadius: '50px', background: '#eff6ff', border: '1px solid #bfdbfe', fontSize: '0.75rem', color: '#1d4ed8', fontFamily: 'sans-serif', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
             🇮🇳 {language === 'hi' ? 'हिंदी' : 'English'}
           </div>
