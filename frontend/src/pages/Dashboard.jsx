@@ -5,31 +5,32 @@ import axios from 'axios'
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'
 
 const mockActivity = [
-  { message: 'New complaint filed — ATM Issue', time: '2 min ago', color: '#dc2626', bg: 'rgba(220,38,38,0.06)', icon: '⚠️' },
-  { message: 'KYC verified for user ****4521', time: '5 min ago', color: '#16a34a', bg: 'rgba(22,163,74,0.06)', icon: '✅' },
-  { message: 'Loan enquiry handled by AI', time: '8 min ago', color: '#2563eb', bg: 'rgba(37,99,235,0.06)', icon: '💬' },
-  { message: 'Live agent escalation — Rajesh Kumar', time: '12 min ago', color: '#d97706', bg: 'rgba(217,119,6,0.06)', icon: '👨‍💼' },
-  { message: 'Account balance query resolved', time: '15 min ago', color: '#2563eb', bg: 'rgba(37,99,235,0.06)', icon: '💬' },
-  { message: 'KYC verified for user ****8834', time: '18 min ago', color: '#16a34a', bg: 'rgba(22,163,74,0.06)', icon: '✅' },
-  { message: 'Complaint UBI-45231 closed', time: '22 min ago', color: '#dc2626', bg: 'rgba(220,38,38,0.06)', icon: '⚠️' },
-  { message: 'Card services query handled', time: '25 min ago', color: '#2563eb', bg: 'rgba(37,99,235,0.06)', icon: '💬' },
+  { type: 'complaint', message: 'New complaint filed — ATM Issue', time: '2 min ago', bg: '#fef2f2', dot: '#ef4444' },
+  { type: 'kyc', message: 'KYC verified for user ****4521', time: '5 min ago', bg: '#f0fdf4', dot: '#22c55e' },
+  { type: 'chat', message: 'Loan enquiry handled by AI', time: '8 min ago', bg: '#eff6ff', dot: '#3b82f6' },
+  { type: 'agent', message: 'Live agent escalation — Rajesh Kumar', time: '12 min ago', bg: '#fffbeb', dot: '#f59e0b' },
+  { type: 'chat', message: 'Account balance query resolved', time: '15 min ago', bg: '#eff6ff', dot: '#3b82f6' },
+  { type: 'kyc', message: 'KYC verified for user ****8834', time: '18 min ago', bg: '#f0fdf4', dot: '#22c55e' },
+  { type: 'complaint', message: 'Complaint UBI-45231 closed', time: '22 min ago', bg: '#fef2f2', dot: '#ef4444' },
+  { type: 'chat', message: 'Card services query handled', time: '25 min ago', bg: '#eff6ff', dot: '#3b82f6' },
 ]
 
 const quickActionStats = [
-  { label: 'Account Balance', count: 342, color: '#2563eb', pct: 100 },
-  { label: 'Loan Enquiry', count: 289, color: '#7c3aed', pct: 84 },
-  { label: 'Card Services', count: 198, color: '#d97706', pct: 58 },
-  { label: 'Branch Locator', count: 165, color: '#0891b2', pct: 48 },
-  { label: 'File Complaint', count: 156, color: '#dc2626', pct: 45 },
-  { label: 'KYC Verification', count: 134, color: '#16a34a', pct: 39 },
+  { label: 'Account Balance', count: 342, color: '#3b82f6' },
+  { label: 'Loan Enquiry', count: 289, color: '#8b5cf6' },
+  { label: 'Card Services', count: 198, color: '#f59e0b' },
+  { label: 'Branch Locator', count: 165, color: '#f97316' },
+  { label: 'File Complaint', count: 156, color: '#ef4444' },
+  { label: 'KYC Verification', count: 134, color: '#22c55e' },
 ]
 
-const statCards = [
-  { label: 'Total Conversations', value: '1,284', sub: '+47 today', color: '#2563eb', bg: 'rgba(37,99,235,0.07)', border: 'rgba(37,99,235,0.12)', icon: '💬' },
-  { label: 'Complaints Resolved', value: '892', sub: 'This month', color: '#16a34a', bg: 'rgba(22,163,74,0.07)', border: 'rgba(22,163,74,0.12)', icon: '✅' },
-  { label: 'KYC Completed', value: '634', sub: 'Verified accounts', color: '#7c3aed', bg: 'rgba(124,58,237,0.07)', border: 'rgba(124,58,237,0.12)', icon: '🪪' },
-  { label: 'Avg Response Time', value: '1.2s', sub: 'AI powered', color: '#d97706', bg: 'rgba(217,119,6,0.07)', border: 'rgba(217,119,6,0.12)', icon: '⚡' },
-  { label: 'Satisfaction Rate', value: '94%', sub: 'Customer rating', color: '#0891b2', bg: 'rgba(8,145,178,0.07)', border: 'rgba(8,145,178,0.12)', icon: '⭐' },
+const statCards = (complaints, liveCount) => [
+  { label: 'Total Conversations', value: '1,284', sub: '+47 today', icon: '💬', color: '#3b82f6', bg: '#eff6ff', border: '#bfdbfe' },
+  { label: 'Complaints Resolved', value: '892', sub: `${complaints.length} this session`, icon: '✅', color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0' },
+  { label: 'KYC Completed', value: '634', sub: 'Verified accounts', icon: '🪪', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
+  { label: 'Avg Response Time', value: '1.2s', sub: 'AI powered', icon: '⚡', color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
+  { label: 'Satisfaction Rate', value: '94%', sub: 'Customer rating', icon: '⭐', color: '#ea580c', bg: '#fff7ed', border: '#fed7aa' },
+  { label: 'Live Users', value: liveCount.toString(), sub: 'Right now', icon: '👥', color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0' },
 ]
 
 export default function Dashboard() {
@@ -40,160 +41,202 @@ export default function Dashboard() {
 
   useEffect(() => {
     setTimeout(() => setMounted(true), 100)
-    axios.get(`${BACKEND_URL}/api/complaints`).then(res => setComplaints(res.data.complaints)).catch(() => {})
-    const interval = setInterval(() => setLiveCount(prev => Math.max(1, prev + Math.floor(Math.random() * 3) - 1)), 3000)
+    axios.get(`${BACKEND_URL}/api/complaints`)
+      .then(res => setComplaints(res.data.complaints))
+      .catch(() => {})
+    const interval = setInterval(() => {
+      setLiveCount(prev => Math.max(1, prev + Math.floor(Math.random() * 3) - 1))
+    }, 3000)
     return () => clearInterval(interval)
   }, [])
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f4f6fb', fontFamily: 'system-ui, -apple-system, sans-serif', color: '#1e293b' }}>
+    <div style={{ minHeight: '100vh', background: '#f8f9fc', fontFamily: "'Georgia', 'Times New Roman', serif", color: '#1e293b' }}>
 
-      {/* Header */}
-      <div style={{ padding: '1rem 2.5rem', borderBottom: '1px solid rgba(0,0,0,0.06)', background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10, opacity: mounted ? 1 : 0, transition: 'opacity 0.5s ease' }}>
+      <div style={{ height: '4px', background: 'linear-gradient(90deg, #1e40af, #3b82f6, #1e40af)' }} />
+
+      <header style={{
+        padding: '1rem 2.5rem', background: 'white',
+        borderBottom: '1px solid #e2e8f0',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        position: 'sticky', top: 0, zIndex: 10,
+        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+      }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <button onClick={() => navigate('/')} style={{ background: 'transparent', border: '1px solid #e2e8f0', color: '#64748b', borderRadius: '8px', padding: '0.4rem 0.9rem', cursor: 'pointer', fontSize: '0.82rem', fontWeight: '500', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#1e293b' }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#64748b' }}>← Back</button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'linear-gradient(135deg, #1a3a6b, #2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}>📊</div>
-            <div>
-              <div style={{ fontWeight: '700', fontSize: '0.95rem', color: '#0f172a' }}>EchoSense Analytics</div>
-              <div style={{ fontSize: '0.68rem', color: '#94a3b8', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Union Bank of India — AI Dashboard</div>
-            </div>
+          <button onClick={() => navigate('/')} style={{
+            padding: '0.5rem 1rem', borderRadius: '6px', border: '1px solid #e2e8f0',
+            background: 'white', color: '#64748b', cursor: 'pointer', fontSize: '0.85rem',
+            fontFamily: 'sans-serif', fontWeight: '500', transition: 'all 0.2s',
+          }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = '#3b82f6'}
+            onMouseLeave={e => e.currentTarget.style.borderColor = '#e2e8f0'}
+          >← Back</button>
+          <div style={{ width: '1px', height: '24px', background: '#e2e8f0' }} />
+          <div>
+            <div style={{ fontWeight: '700', fontSize: '1.1rem', color: '#0f172a' }}>EchoSense Analytics</div>
+            <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontFamily: 'sans-serif', letterSpacing: '0.05em' }}>UNION BANK OF INDIA — AI DASHBOARD</div>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.85rem', borderRadius: '50px', background: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.2)' }}>
-          <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#22c55e', animation: 'blink 1.5s infinite' }} />
-          <span style={{ color: '#16a34a', fontSize: '0.8rem', fontWeight: '600' }}>{liveCount} Live Users</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.9rem', borderRadius: '50px', background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+            <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#22c55e', animation: 'pulse 2s infinite' }} />
+            <span style={{ fontSize: '0.8rem', color: '#15803d', fontFamily: 'sans-serif', fontWeight: '600' }}>{liveCount} Live Users</span>
+          </div>
+          <div style={{ padding: '0.4rem 0.9rem', borderRadius: '6px', background: '#eff6ff', border: '1px solid #bfdbfe', fontSize: '0.78rem', color: '#1d4ed8', fontFamily: 'sans-serif', fontWeight: '600' }}>
+            Today: March 19, 2026
+          </div>
         </div>
-      </div>
+      </header>
 
-      <div style={{ padding: '2rem 2.5rem', maxWidth: '1280px', margin: '0 auto' }}>
+      <main style={{ padding: '2rem 2.5rem', maxWidth: '1300px', margin: '0 auto' }}>
 
         {/* Stats Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
-          {statCards.map((stat, i) => (
-            <div key={stat.label} style={{ padding: '1.25rem', background: '#fff', border: `1px solid ${stat.border}`, borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', transition: 'all 0.3s ease', cursor: 'default', opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(20px)', transitionDelay: `${i * 0.08}s` }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = `0 8px 24px ${stat.border}` }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: stat.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', marginBottom: '0.75rem' }}>{stat.icon}</div>
-              <div style={{ fontSize: '1.7rem', fontWeight: '800', color: stat.color, letterSpacing: '-0.02em', marginBottom: '0.2rem' }}>{stat.value}</div>
-              <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: '500', marginBottom: '0.15rem' }}>{stat.label}</div>
-              <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>{stat.sub}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '1rem', marginBottom: '1.75rem' }}>
+          {statCards(complaints, liveCount).map((stat, i) => (
+            <div key={stat.label} style={{
+              background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0',
+              padding: '1.25rem', boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+              opacity: mounted ? 1 : 0,
+              transform: mounted ? 'translateY(0)' : 'translateY(16px)',
+              transition: `all 0.5s ease ${i * 0.06}s`, cursor: 'default',
+            }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = stat.border; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.04)' }}
+            >
+              <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: stat.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', marginBottom: '0.9rem' }}>{stat.icon}</div>
+              <div style={{ fontSize: '1.75rem', fontWeight: '700', color: stat.color, marginBottom: '0.2rem', letterSpacing: '-0.02em' }}>{stat.value}</div>
+              <div style={{ fontSize: '0.78rem', color: '#475569', fontFamily: 'sans-serif', fontWeight: '500', marginBottom: '0.2rem' }}>{stat.label}</div>
+              <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontFamily: 'sans-serif' }}>{stat.sub}</div>
             </div>
           ))}
         </div>
 
-        {/* Live users bar */}
-        <div style={{ padding: '1rem 1.5rem', background: 'linear-gradient(135deg, rgba(37,99,235,0.05), rgba(124,58,237,0.03))', border: '1px solid rgba(37,99,235,0.1)', borderRadius: '14px', display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', opacity: mounted ? 1 : 0, transition: 'opacity 0.5s ease 0.5s' }}>
-          <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(37,99,235,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem' }}>👥</div>
-          <div>
-            <div style={{ fontSize: '1.4rem', fontWeight: '800', color: '#2563eb', letterSpacing: '-0.02em' }}>{liveCount}</div>
-            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Live Users Right Now</div>
-          </div>
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#22c55e', animation: 'blink 1.5s infinite' }} />
-            <span style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: '600' }}>Real-time</span>
-          </div>
-        </div>
+        {/* Middle Row */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr 1fr', gap: '1rem', marginBottom: '1.75rem' }}>
 
-        {/* Middle row */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
-
-          {/* Quick Actions */}
-          <div style={{ padding: '1.5rem', background: '#fff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', opacity: mounted ? 1 : 0, transition: 'opacity 0.5s ease 0.3s' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+          {/* Quick Action Usage */}
+          <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1.5rem', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(16px)', transition: 'all 0.5s ease 0.35s' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <h3 style={{ fontSize: '0.95rem', fontWeight: '700', color: '#0f172a' }}>Quick Action Usage</h3>
-              <span style={{ fontSize: '0.72rem', color: '#94a3b8', background: '#f8fafc', padding: '0.2rem 0.6rem', borderRadius: '50px', border: '1px solid #e2e8f0' }}>This Month</span>
+              <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontFamily: 'sans-serif', letterSpacing: '0.05em' }}>THIS MONTH</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {quickActionStats.map(stat => (
-                <div key={stat.label}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
-                    <span style={{ fontSize: '0.82rem', color: '#374151', fontWeight: '500' }}>{stat.label}</span>
-                    <span style={{ fontSize: '0.82rem', color: stat.color, fontWeight: '700' }}>{stat.count}</span>
+              {quickActionStats.map(stat => {
+                const max = Math.max(...quickActionStats.map(s => s.count))
+                const pct = (stat.count / max) * 100
+                return (
+                  <div key={stat.label}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                      <span style={{ fontSize: '0.82rem', color: '#475569', fontFamily: 'sans-serif' }}>{stat.label}</span>
+                      <span style={{ fontSize: '0.82rem', color: stat.color, fontFamily: 'sans-serif', fontWeight: '700' }}>{stat.count}</span>
+                    </div>
+                    <div style={{ height: '6px', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', borderRadius: '3px', width: mounted ? `${pct}%` : '0%', background: stat.color, transition: 'width 1s ease 0.5s' }} />
+                    </div>
                   </div>
-                  <div style={{ height: '6px', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', borderRadius: '3px', width: mounted ? `${stat.pct}%` : '0%', background: `linear-gradient(90deg, ${stat.color}, ${stat.color}88)`, transition: 'width 1.2s ease 0.6s' }} />
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Language Distribution */}
+          <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1.5rem', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(16px)', transition: 'all 0.5s ease 0.4s' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: '700', color: '#0f172a' }}>Languages</h3>
+              <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontFamily: 'sans-serif', letterSpacing: '0.05em' }}>DISTRIBUTION</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              {[
+                { lang: 'English', native: 'English', pct: 67, color: '#3b82f6' },
+                { lang: 'Hindi', native: 'हिंदी', pct: 33, color: '#8b5cf6' },
+              ].map(l => (
+                <div key={l.lang}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                    <span style={{ fontSize: '0.88rem', color: '#334155' }}>{l.native}</span>
+                    <span style={{ fontSize: '0.88rem', color: l.color, fontFamily: 'sans-serif', fontWeight: '700' }}>{l.pct}%</span>
+                  </div>
+                  <div style={{ height: '10px', background: '#f1f5f9', borderRadius: '5px', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', borderRadius: '5px', width: mounted ? `${l.pct}%` : '0%', background: l.color, transition: 'width 1s ease 0.6s' }} />
                   </div>
                 </div>
               ))}
             </div>
-          </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {/* Language Distribution */}
-            <div style={{ padding: '1.5rem', background: '#fff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', opacity: mounted ? 1 : 0, transition: 'opacity 0.5s ease 0.4s' }}>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: '700', color: '#0f172a', marginBottom: '1.25rem' }}>Language Distribution</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                {[{ native: 'English', pct: 58, color: '#2563eb' }, { native: 'हिंदी', pct: 29, color: '#7c3aed' }, { native: 'मराठी', pct: 13, color: '#16a34a' }].map(l => (
-                  <div key={l.native}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
-                      <span style={{ fontSize: '0.82rem', color: '#374151', fontWeight: '500' }}>{l.native}</span>
-                      <span style={{ fontSize: '0.82rem', color: l.color, fontWeight: '700' }}>{l.pct}%</span>
+            <div style={{ height: '1px', background: '#f1f5f9', margin: '1.5rem 0' }} />
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+              <h3 style={{ fontSize: '0.88rem', fontWeight: '700', color: '#0f172a' }}>Session Complaints</h3>
+              <span style={{ padding: '0.15rem 0.5rem', borderRadius: '50px', background: complaints.length > 0 ? '#fef2f2' : '#f0fdf4', color: complaints.length > 0 ? '#ef4444' : '#16a34a', fontSize: '0.72rem', fontFamily: 'sans-serif', fontWeight: '600' }}>{complaints.length}</span>
+            </div>
+            {complaints.length === 0 ? (
+              <p style={{ color: '#94a3b8', fontSize: '0.8rem', fontFamily: 'sans-serif' }}>No complaints this session</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', maxHeight: '120px', overflowY: 'auto' }}>
+                {complaints.map((c, i) => (
+                  <div key={i} style={{ padding: '0.5rem 0.75rem', borderRadius: '6px', background: '#fafafa', border: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ fontSize: '0.78rem', color: '#334155', fontFamily: 'sans-serif', fontWeight: '600' }}>{c.id}</div>
+                      <div style={{ fontSize: '0.7rem', color: '#94a3b8', fontFamily: 'sans-serif' }}>{c.category}</div>
                     </div>
-                    <div style={{ height: '7px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', borderRadius: '4px', width: mounted ? `${l.pct}%` : '0%', background: `linear-gradient(90deg, ${l.color}, ${l.color}88)`, transition: 'width 1.2s ease 0.7s' }} />
-                    </div>
+                    <span style={{ padding: '0.15rem 0.5rem', borderRadius: '4px', alignSelf: 'center', background: '#fffbeb', color: '#d97706', fontSize: '0.68rem', fontFamily: 'sans-serif', fontWeight: '600' }}>{c.status}</span>
                   </div>
                 ))}
               </div>
-            </div>
+            )}
+          </div>
 
-            {/* Session Complaints */}
-            <div style={{ padding: '1.5rem', background: '#fff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', flex: 1, opacity: mounted ? 1 : 0, transition: 'opacity 0.5s ease 0.5s' }}>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: '700', color: '#0f172a', marginBottom: '1rem' }}>
-                Session Complaints
-                <span style={{ marginLeft: '0.5rem', fontSize: '0.72rem', fontWeight: '600', padding: '0.15rem 0.5rem', borderRadius: '50px', background: complaints.length > 0 ? 'rgba(220,38,38,0.08)' : 'rgba(22,163,74,0.08)', color: complaints.length > 0 ? '#dc2626' : '#16a34a', border: `1px solid ${complaints.length > 0 ? 'rgba(220,38,38,0.15)' : 'rgba(22,163,74,0.15)'}` }}>{complaints.length}</span>
-              </h3>
-              {complaints.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '1.5rem', color: '#94a3b8', fontSize: '0.82rem' }}>
-                  <div style={{ fontSize: '1.5rem', marginBottom: '0.4rem' }}>✅</div>
-                  No complaints this session
+          {/* Live Activity */}
+          <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1.5rem', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(16px)', transition: 'all 0.5s ease 0.45s' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: '700', color: '#0f172a' }}>Live Activity</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.2rem 0.6rem', borderRadius: '50px', background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+                <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#22c55e', animation: 'pulse 1.5s infinite' }} />
+                <span style={{ fontSize: '0.68rem', color: '#15803d', fontFamily: 'sans-serif', fontWeight: '700', letterSpacing: '0.05em' }}>LIVE</span>
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {mockActivity.map((activity, i) => (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'center', gap: '0.75rem',
+                  padding: '0.6rem 0.75rem', borderRadius: '8px',
+                  background: activity.bg, border: `1px solid ${activity.dot}22`,
+                  opacity: mounted ? 1 : 0,
+                  transform: mounted ? 'translateX(0)' : 'translateX(12px)',
+                  transition: `all 0.4s ease ${0.5 + i * 0.05}s`,
+                }}>
+                  <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: activity.dot, flexShrink: 0 }} />
+                  <span style={{ flex: 1, fontSize: '0.78rem', color: '#334155', fontFamily: 'sans-serif' }}>{activity.message}</span>
+                  <span style={{ fontSize: '0.68rem', color: '#94a3b8', fontFamily: 'sans-serif', whiteSpace: 'nowrap' }}>{activity.time}</span>
                 </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '120px', overflowY: 'auto' }}>
-                  {complaints.map((c, i) => (
-                    <div key={i} style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', background: '#fafbfc', border: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <div style={{ fontSize: '0.78rem', color: '#374151', fontWeight: '600' }}>{c.id}</div>
-                        <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>{c.category}</div>
-                      </div>
-                      <span style={{ padding: '0.15rem 0.5rem', borderRadius: '50px', background: 'rgba(217,119,6,0.08)', border: '1px solid rgba(217,119,6,0.2)', color: '#d97706', fontSize: '0.68rem', fontWeight: '600' }}>{c.status}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Live Activity Feed */}
-        <div style={{ padding: '1.5rem', background: '#fff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', opacity: mounted ? 1 : 0, transition: 'opacity 0.5s ease 0.6s' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
-            <h3 style={{ fontSize: '0.95rem', fontWeight: '700', color: '#0f172a' }}>Live Activity Feed</h3>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.2rem 0.6rem', borderRadius: '50px', background: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.2)' }}>
-              <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#22c55e', animation: 'blink 1.5s infinite' }} />
-              <span style={{ color: '#16a34a', fontSize: '0.68rem', fontWeight: '700', letterSpacing: '0.05em' }}>LIVE</span>
-            </div>
+        {/* Bottom Bar */}
+        <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1.25rem 1.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', opacity: mounted ? 1 : 0, transition: 'all 0.5s ease 0.55s' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '0.85rem' }}>🤖</span>
+            <span style={{ fontSize: '0.82rem', color: '#475569', fontFamily: 'sans-serif' }}>
+              <strong>EchoSense</strong> is handling queries autonomously · Groq AI (Llama 3.3 70B) · English & Hindi
+            </span>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
-            {mockActivity.map((activity, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.7rem 0.9rem', borderRadius: '10px', background: activity.bg, border: `1px solid ${activity.color}18`, transition: 'all 0.2s ease', opacity: mounted ? 1 : 0, transitionDelay: `${0.7 + i * 0.05}s` }}
-                onMouseEnter={e => e.currentTarget.style.transform = 'translateX(3px)'}
-                onMouseLeave={e => e.currentTarget.style.transform = 'translateX(0)'}>
-                <span style={{ fontSize: '0.85rem', flexShrink: 0 }}>{activity.icon}</span>
-                <span style={{ flex: 1, fontSize: '0.78rem', color: '#374151', fontWeight: '500' }}>{activity.message}</span>
-                <span style={{ fontSize: '0.68rem', color: '#94a3b8', whiteSpace: 'nowrap' }}>{activity.time}</span>
+          <div style={{ display: 'flex', gap: '2rem' }}>
+            {[{ label: 'Uptime', value: '99.9%' }, { label: 'AI Accuracy', value: '96.2%' }, { label: 'Avg Handle Time', value: '48s' }].map(m => (
+              <div key={m.label} style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '0.95rem', fontWeight: '700', color: '#1e40af' }}>{m.value}</div>
+                <div style={{ fontSize: '0.68rem', color: '#94a3b8', fontFamily: 'sans-serif', letterSpacing: '0.05em' }}>{m.label.toUpperCase()}</div>
               </div>
             ))}
           </div>
         </div>
-      </div>
+      </main>
 
       <style>{`
-        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-        ::-webkit-scrollbar{width:4px}
-        ::-webkit-scrollbar-track{background:transparent}
-        ::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:2px}
+        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.3); } }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 2px; }
       `}</style>
     </div>
   )

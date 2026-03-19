@@ -4,14 +4,13 @@ import { useNavigate } from 'react-router-dom'
 const languages = [
   { code: 'en', label: 'English', native: 'English', sub: 'Continue in English' },
   { code: 'hi', label: 'Hindi', native: 'हिंदी', sub: 'हिंदी में जारी रखें' },
-  { code: 'mr', label: 'Marathi', native: 'मराठी', sub: 'मराठीत सुरू ठेवा' },
 ]
 
 const features = [
   { icon: '🎙️', label: 'Voice Enabled' },
   { icon: '🔒', label: 'Bank-Grade Security' },
   { icon: '⚡', label: 'Instant AI Response' },
-  { icon: '🌐', label: 'Multilingual' },
+  { icon: '🌐', label: 'Hindi & English' },
 ]
 
 const stats = [
@@ -44,7 +43,6 @@ export default function Landing() {
       overflow: 'hidden',
     }}>
 
-      {/* Subtle grid background */}
       <div style={{
         position: 'absolute', inset: 0, zIndex: 0,
         backgroundImage: `
@@ -54,10 +52,8 @@ export default function Landing() {
         backgroundSize: '40px 40px',
       }} />
 
-      {/* Top accent bar */}
       <div style={{ height: '4px', background: 'linear-gradient(90deg, #1e40af, #3b82f6, #1e40af)', position: 'relative', zIndex: 1 }} />
 
-      {/* Header */}
       <header style={{
         padding: '1rem 3rem',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -104,7 +100,6 @@ export default function Landing() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main style={{
         flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: '3rem 2rem', position: 'relative', zIndex: 1,
@@ -115,7 +110,7 @@ export default function Landing() {
           alignItems: 'center',
         }}>
 
-          {/* Left — Hero Text */}
+          {/* Left */}
           <div style={{
             opacity: mounted ? 1 : 0,
             transform: mounted ? 'translateY(0)' : 'translateY(24px)',
@@ -148,10 +143,9 @@ export default function Landing() {
               marginBottom: '2rem', fontFamily: 'sans-serif', fontWeight: '400',
               maxWidth: '420px',
             }}>
-              EchoSense understands Hindi, Marathi, English and all 22 Indian languages. Get instant answers to all your banking queries — 24/7.
+              EchoSense is your AI-powered banking assistant for Union Bank of India — available in English and Hindi, 24/7.
             </p>
 
-            {/* Feature pills */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '2.5rem' }}>
               {features.map(f => (
                 <div key={f.label} style={{
@@ -168,10 +162,8 @@ export default function Landing() {
               ))}
             </div>
 
-            {/* Divider */}
             <div style={{ height: '1px', background: '#e2e8f0', marginBottom: '1.75rem' }} />
 
-            {/* Stats */}
             <div style={{ display: 'flex', gap: '2.5rem' }}>
               {stats.map(s => (
                 <div key={s.label}>
@@ -189,13 +181,10 @@ export default function Landing() {
             transition: 'all 0.7s ease 0.15s',
           }}>
             <div style={{
-              background: 'white',
-              borderRadius: '20px',
-              border: '1px solid #e2e8f0',
-              padding: '2.25rem',
+              background: 'white', borderRadius: '20px',
+              border: '1px solid #e2e8f0', padding: '2.25rem',
               boxShadow: '0 20px 60px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.04)',
             }}>
-              {/* Card Header */}
               <div style={{
                 display: 'flex', alignItems: 'center', gap: '1rem',
                 marginBottom: '1.75rem', paddingBottom: '1.25rem',
@@ -205,23 +194,21 @@ export default function Landing() {
                   width: '48px', height: '48px', borderRadius: '12px',
                   background: 'linear-gradient(135deg, #1e40af, #3b82f6)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '1.4rem',
-                  boxShadow: '0 8px 24px rgba(30,64,175,0.3)',
+                  fontSize: '1.4rem', boxShadow: '0 8px 24px rgba(30,64,175,0.3)',
                 }}>🤖</div>
                 <div>
                   <div style={{ fontWeight: '700', fontSize: '1.05rem', color: '#1e293b' }}>Welcome to EchoSense</div>
-                  <div style={{ fontSize: '0.78rem', color: '#94a3b8', fontFamily: 'sans-serif' }}>Choose your language to get started</div>
+                  <div style={{ fontSize: '0.78rem', color: '#94a3b8', fontFamily: 'sans-serif' }}>Select your preferred language</div>
                 </div>
               </div>
 
-              {/* Language Buttons */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '0.5rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.75rem' }}>
                 {languages.map((lang, i) => (
                   <button
                     key={lang.code}
                     onClick={() => setSelected(lang.code)}
                     style={{
-                      padding: '0.9rem 1.1rem', borderRadius: '10px',
+                      padding: '1rem 1.25rem', borderRadius: '10px',
                       border: selected === lang.code ? '2px solid #3b82f6' : '2px solid #f1f5f9',
                       background: selected === lang.code ? '#eff6ff' : '#fafafa',
                       cursor: 'pointer', textAlign: 'left',
@@ -229,7 +216,7 @@ export default function Landing() {
                       transition: 'all 0.2s ease',
                       opacity: mounted ? 1 : 0,
                       transform: mounted ? 'translateX(0)' : 'translateX(16px)',
-                      transitionDelay: `${0.3 + i * 0.08}s`,
+                      transitionDelay: `${0.3 + i * 0.1}s`,
                     }}
                     onMouseEnter={e => {
                       if (selected !== lang.code) {
@@ -246,13 +233,13 @@ export default function Landing() {
                   >
                     <div>
                       <div style={{
-                        fontWeight: '600', fontSize: '1rem',
+                        fontWeight: '600', fontSize: '1.05rem',
                         color: selected === lang.code ? '#1e40af' : '#1e293b',
                       }}>{lang.native}</div>
-                      <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontFamily: 'sans-serif', marginTop: '0.1rem' }}>{lang.sub}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontFamily: 'sans-serif', marginTop: '0.15rem' }}>{lang.sub}</div>
                     </div>
                     <div style={{
-                      width: '20px', height: '20px', borderRadius: '50%',
+                      width: '22px', height: '22px', borderRadius: '50%',
                       border: selected === lang.code ? '2px solid #3b82f6' : '2px solid #e2e8f0',
                       background: selected === lang.code ? '#3b82f6' : 'transparent',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -264,16 +251,6 @@ export default function Landing() {
                 ))}
               </div>
 
-              {/* Language note */}
-              <p style={{
-                fontSize: '0.72rem', color: '#94a3b8',
-                fontFamily: 'sans-serif', textAlign: 'center',
-                marginBottom: '1.5rem', marginTop: '0.6rem',
-              }}>
-                All 22 Indian languages auto-detected inside chat
-              </p>
-
-              {/* CTA Button */}
               <button
                 onClick={handleContinue}
                 disabled={!selected}
@@ -290,10 +267,9 @@ export default function Landing() {
                 onMouseEnter={e => { if (selected) e.currentTarget.style.transform = 'translateY(-1px)' }}
                 onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)' }}
               >
-                {selected ? `Start in ${languages.find(l => l.code === selected)?.label} →` : 'Choose a Language'}
+                {selected ? `Get Started in ${languages.find(l => l.code === selected)?.label} →` : 'Select a Language'}
               </button>
 
-              {/* Security note */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.5rem', marginTop: '1.25rem' }}>
                 {['🔒 Secure', '⚡ Fast', '🇮🇳 India-First'].map(item => (
                   <span key={item} style={{ fontSize: '0.72rem', color: '#94a3b8', fontFamily: 'sans-serif' }}>{item}</span>
@@ -304,10 +280,8 @@ export default function Landing() {
         </div>
       </main>
 
-      {/* Footer */}
       <footer style={{
-        padding: '1.1rem 3rem',
-        borderTop: '1px solid #e2e8f0',
+        padding: '1.1rem 3rem', borderTop: '1px solid #e2e8f0',
         background: 'white',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         position: 'relative', zIndex: 1,
@@ -316,7 +290,7 @@ export default function Landing() {
           © 2025 Union Bank of India · EchoSense AI
         </span>
         <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontFamily: 'sans-serif' }}>
-          Powered by Groq AI · 22 Indian Languages Supported
+          Powered by Groq AI · English & Hindi
         </span>
       </footer>
 
