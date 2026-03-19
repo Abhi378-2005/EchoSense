@@ -1,16 +1,32 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 const languages = [
-  { code: 'en', label: 'English', native: 'English' },
-  { code: 'hi', label: 'Hindi', native: 'हिंदी' },
-  { code: 'mr', label: 'Marathi', native: 'मराठी' },
+  { code: 'en', label: 'English', native: 'English', sub: 'Continue in English' },
+  { code: 'hi', label: 'Hindi', native: 'हिंदी', sub: 'हिंदी में जारी रखें' },
+]
+
+const features = [
+  { icon: '🎙️', label: 'Voice Enabled' },
+  { icon: '🔒', label: 'Bank-Grade Security' },
+  { icon: '⚡', label: 'Instant AI Response' },
+  { icon: '🌐', label: 'Hindi & English' },
+]
+
+const stats = [
+  { value: '50K+', label: 'Customers Served' },
+  { value: '1.2s', label: 'Avg Response' },
+  { value: '94%', label: 'Satisfaction' },
 ]
 
 export default function Landing() {
   const [selected, setSelected] = useState(null)
-  const [hovered, setHovered] = useState(null)
+  const [mounted, setMounted] = useState(false)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    setTimeout(() => setMounted(true), 100)
+  }, [])
 
   const handleContinue = () => {
     if (selected) navigate('/chat', { state: { language: selected } })
@@ -19,182 +35,269 @@ export default function Landing() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0a0a0a 0%, #0d1b2a 50%, #0a0a0a 100%)',
+      background: '#f8f9fc',
       display: 'flex',
       flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontFamily: "'Segoe UI', sans-serif",
+      fontFamily: "'Georgia', 'Times New Roman', serif",
       position: 'relative',
-      overflow: 'hidden'
+      overflow: 'hidden',
     }}>
 
-      {/* Animated background orbs */}
       <div style={{
-        position: 'absolute', width: '500px', height: '500px',
-        borderRadius: '50%', top: '-100px', left: '-100px',
-        background: 'radial-gradient(circle, rgba(30,100,255,0.15) 0%, transparent 70%)',
-        animation: 'pulse 4s ease-in-out infinite'
-      }} />
-      <div style={{
-        position: 'absolute', width: '400px', height: '400px',
-        borderRadius: '50%', bottom: '-80px', right: '-80px',
-        background: 'radial-gradient(circle, rgba(100,30,255,0.12) 0%, transparent 70%)',
-        animation: 'pulse 6s ease-in-out infinite reverse'
+        position: 'absolute', inset: 0, zIndex: 0,
+        backgroundImage: `
+          linear-gradient(rgba(30,64,175,0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(30,64,175,0.03) 1px, transparent 1px)
+        `,
+        backgroundSize: '40px 40px',
       }} />
 
-      {/* Union Bank Badge — top center */}
-      <div style={{
-        position: 'absolute', top: '2rem', left: '50%',
-        transform: 'translateX(-50%)',
-        display: 'flex', alignItems: 'center', gap: '0.5rem',
-        whiteSpace: 'nowrap'
+      <div style={{ height: '4px', background: 'linear-gradient(90deg, #1e40af, #3b82f6, #1e40af)', position: 'relative', zIndex: 1 }} />
+
+      <header style={{
+        padding: '1rem 3rem',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        borderBottom: '1px solid #e2e8f0',
+        background: 'rgba(255,255,255,0.9)',
+        backdropFilter: 'blur(12px)',
+        position: 'sticky', top: 0, zIndex: 10,
       }}>
-        <div style={{
-          width: '10px', height: '10px', borderRadius: '50%',
-          background: '#1e64ff', boxShadow: '0 0 10px #1e64ff'
-        }} />
-        <span style={{ color: '#888', fontSize: '0.85rem', letterSpacing: '0.1em' }}>
-          UNION BANK OF INDIA — AI SELF SERVICE
-        </span>
-      </div>
-
-      {/* Main content */}
-      <div style={{ textAlign: 'center', zIndex: 1, padding: '2rem' }}>
-
-        {/* Chatbot Avatar Orb */}
-        <div style={{
-          width: '100px', height: '100px', borderRadius: '50%',
-          background: 'linear-gradient(135deg, #1e64ff, #7c3aed)',
-          margin: '4rem auto 2rem',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '2.8rem',
-          boxShadow: '0 0 40px rgba(30,100,255,0.4), 0 0 80px rgba(124,58,237,0.2)',
-          animation: 'glow 3s ease-in-out infinite'
-        }}>
-          🤖
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{
+            width: '36px', height: '36px', borderRadius: '8px',
+            background: 'linear-gradient(135deg, #1e40af, #3b82f6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '1.1rem',
+          }}>🏦</div>
+          <div>
+            <div style={{ fontWeight: '700', fontSize: '1rem', color: '#1e293b', letterSpacing: '-0.01em' }}>Union Bank of India</div>
+            <div style={{ fontSize: '0.68rem', color: '#94a3b8', letterSpacing: '0.08em', fontFamily: 'sans-serif' }}>AI SELF SERVICE PORTAL</div>
+          </div>
         </div>
-
-        <h1 style={{
-          fontSize: '3.5rem', fontWeight: '800',
-          background: 'linear-gradient(135deg, #ffffff 0%, #a0b4ff 100%)',
-          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-          marginBottom: '0.5rem', letterSpacing: '-0.02em'
-        }}>
-          EchoSense
-        </h1>
-
-        <p style={{ color: '#888', fontSize: '1.1rem', marginBottom: '3rem', letterSpacing: '0.05em' }}>
-          Your AI Banking Assistant — Available 24/7
-        </p>
-
-        {/* Language Selection */}
-        <p style={{ color: '#aaa', marginBottom: '1rem', fontSize: '0.9rem', letterSpacing: '0.08em' }}>
-          SELECT YOUR LANGUAGE
-        </p>
-
-        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginBottom: '2.5rem', flexWrap: 'wrap' }}>
-          {languages.map(lang => (
-            <button
-              key={lang.code}
-              onClick={() => setSelected(lang.code)}
-              onMouseEnter={() => setHovered(lang.code)}
-              onMouseLeave={() => setHovered(null)}
-              style={{
-                padding: '1rem 2rem', borderRadius: '12px',
-                border: selected === lang.code
-                  ? '2px solid #1e64ff'
-                  : hovered === lang.code
-                  ? '2px solid rgba(30,100,255,0.5)'
-                  : '2px solid rgba(255,255,255,0.1)',
-                background: selected === lang.code
-                  ? 'rgba(30,100,255,0.2)'
-                  : hovered === lang.code
-                  ? 'rgba(255,255,255,0.05)'
-                  : 'rgba(255,255,255,0.03)',
-                color: '#fff', cursor: 'pointer',
-                transition: 'all 0.2s ease', minWidth: '130px'
-              }}
-            >
-              <div style={{ fontSize: '1.3rem', marginBottom: '0.3rem' }}>{lang.native}</div>
-              <div style={{ fontSize: '0.75rem', color: '#888' }}>{lang.label}</div>
-            </button>
-          ))}
-        </div>
-
-        {/* Continue Button */}
-        <button
-          onClick={handleContinue}
-          disabled={!selected}
-          style={{
-            padding: '1rem 3rem', borderRadius: '50px', border: 'none',
-            background: selected
-              ? 'linear-gradient(135deg, #1e64ff, #7c3aed)'
-              : 'rgba(255,255,255,0.1)',
-            color: selected ? '#fff' : '#555',
-            fontSize: '1rem', fontWeight: '600',
-            cursor: selected ? 'pointer' : 'not-allowed',
-            transition: 'all 0.3s ease', letterSpacing: '0.05em',
-            boxShadow: selected ? '0 0 30px rgba(30,100,255,0.4)' : 'none'
-          }}
-        >
-          {selected ? 'Get Started' : 'Select a Language'}
-        </button>
-
-        {/* Features row */}
-        <div style={{
-          display: 'flex', gap: '2rem', marginTop: '3rem',
-          justifyContent: 'center', flexWrap: 'wrap'
-        }}>
-          {[
-            { icon: '🎙️', label: 'Voice Enabled' },
-            { icon: '🔒', label: 'Secure & Private' },
-            { icon: '⚡', label: 'Instant Response' },
-            { icon: '🌐', label: 'Multilingual' },
-          ].map(f => (
-            <div key={f.label} style={{
-              display: 'flex', alignItems: 'center', gap: '0.4rem',
-              color: '#666', fontSize: '0.85rem'
-            }}>
-              <span>{f.icon}</span>
-              <span>{f.label}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Dashboard Link */}
-        <div style={{ marginTop: '1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
           <button
             onClick={() => navigate('/dashboard')}
             style={{
-              padding: '0.6rem 1.5rem', borderRadius: '50px',
-              border: '1px solid rgba(255,255,255,0.1)',
-              background: 'rgba(255,255,255,0.03)',
-              color: '#888', cursor: 'pointer', fontSize: '0.85rem',
-              transition: 'all 0.2s ease'
+              padding: '0.5rem 1.25rem', borderRadius: '6px',
+              border: '1px solid #e2e8f0', background: 'white',
+              color: '#475569', cursor: 'pointer', fontSize: '0.85rem',
+              fontFamily: 'sans-serif', fontWeight: '500',
+              transition: 'all 0.2s ease',
             }}
-            onMouseEnter={e => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.07)'
-              e.currentTarget.style.color = '#fff'
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.03)'
-              e.currentTarget.style.color = '#888'
-            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#3b82f6'; e.currentTarget.style.color = '#1e40af' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.color = '#475569' }}
           >
-            View Analytics Dashboard →
+            Analytics Dashboard →
           </button>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '0.4rem',
+            padding: '0.35rem 0.75rem', borderRadius: '50px',
+            background: '#f0fdf4', border: '1px solid #bbf7d0',
+          }}>
+            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e', animation: 'pulse 2s infinite' }} />
+            <span style={{ fontSize: '0.75rem', color: '#15803d', fontFamily: 'sans-serif', fontWeight: '600' }}>AI Assistant Online</span>
+          </div>
         </div>
-      </div>
+      </header>
+
+      <main style={{
+        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '3rem 2rem', position: 'relative', zIndex: 1,
+      }}>
+        <div style={{
+          display: 'grid', gridTemplateColumns: '1fr 1fr',
+          gap: '5rem', maxWidth: '1100px', width: '100%',
+          alignItems: 'center',
+        }}>
+
+          {/* Left */}
+          <div style={{
+            opacity: mounted ? 1 : 0,
+            transform: mounted ? 'translateY(0)' : 'translateY(24px)',
+            transition: 'all 0.7s ease',
+          }}>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+              padding: '0.4rem 1rem', borderRadius: '50px',
+              background: '#f0fdf4', border: '1px solid #bbf7d0',
+              marginBottom: '1.5rem',
+            }}>
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e', animation: 'pulse 2s infinite' }} />
+              <span style={{ fontSize: '0.75rem', color: '#15803d', fontFamily: 'sans-serif', fontWeight: '600' }}>AI ASSISTANT ONLINE</span>
+            </div>
+
+            <h1 style={{
+              fontSize: '3.8rem', fontWeight: '700',
+              color: '#0f172a', lineHeight: '1.1',
+              letterSpacing: '-0.03em', marginBottom: '1.5rem',
+            }}>
+              Banking Help,<br />
+              <span style={{
+                background: 'linear-gradient(135deg, #1e40af, #3b82f6)',
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+              }}>Instantly.</span>
+            </h1>
+
+            <p style={{
+              color: '#64748b', fontSize: '1rem', lineHeight: '1.7',
+              marginBottom: '2rem', fontFamily: 'sans-serif', fontWeight: '400',
+              maxWidth: '420px',
+            }}>
+              EchoSense is your AI-powered banking assistant for Union Bank of India — available in English and Hindi, 24/7.
+            </p>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '2.5rem' }}>
+              {features.map(f => (
+                <div key={f.label} style={{
+                  display: 'flex', alignItems: 'center', gap: '0.4rem',
+                  padding: '0.45rem 0.9rem', borderRadius: '6px',
+                  background: 'white', border: '1px solid #e2e8f0',
+                  fontSize: '0.8rem', color: '#475569',
+                  fontFamily: 'sans-serif',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                }}>
+                  <span>{f.icon}</span>
+                  <span style={{ fontWeight: '500' }}>{f.label}</span>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ height: '1px', background: '#e2e8f0', marginBottom: '1.75rem' }} />
+
+            <div style={{ display: 'flex', gap: '2.5rem' }}>
+              {stats.map(s => (
+                <div key={s.label}>
+                  <div style={{ fontSize: '1.6rem', fontWeight: '700', color: '#1e40af', letterSpacing: '-0.02em' }}>{s.value}</div>
+                  <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontFamily: 'sans-serif', marginTop: '0.1rem' }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right — Card */}
+          <div style={{
+            opacity: mounted ? 1 : 0,
+            transform: mounted ? 'translateY(0)' : 'translateY(24px)',
+            transition: 'all 0.7s ease 0.15s',
+          }}>
+            <div style={{
+              background: 'white', borderRadius: '20px',
+              border: '1px solid #e2e8f0', padding: '2.25rem',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.04)',
+            }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '1rem',
+                marginBottom: '1.75rem', paddingBottom: '1.25rem',
+                borderBottom: '1px solid #f1f5f9',
+              }}>
+                <div style={{
+                  width: '48px', height: '48px', borderRadius: '12px',
+                  background: 'linear-gradient(135deg, #1e40af, #3b82f6)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '1.4rem', boxShadow: '0 8px 24px rgba(30,64,175,0.3)',
+                }}>🏦</div>
+                <div>
+                  <div style={{ fontWeight: '700', fontSize: '1.05rem', color: '#1e293b' }}>Welcome to EchoSense</div>
+                  <div style={{ fontSize: '0.78rem', color: '#94a3b8', fontFamily: 'sans-serif' }}>Select your preferred language</div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.75rem' }}>
+                {languages.map((lang, i) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => setSelected(lang.code)}
+                    style={{
+                      padding: '1rem 1.25rem', borderRadius: '10px',
+                      border: selected === lang.code ? '2px solid #3b82f6' : '2px solid #f1f5f9',
+                      background: selected === lang.code ? '#eff6ff' : '#fafafa',
+                      cursor: 'pointer', textAlign: 'left',
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      transition: 'all 0.2s ease',
+                      opacity: mounted ? 1 : 0,
+                      transform: mounted ? 'translateX(0)' : 'translateX(16px)',
+                      transitionDelay: `${0.3 + i * 0.1}s`,
+                    }}
+                    onMouseEnter={e => {
+                      if (selected !== lang.code) {
+                        e.currentTarget.style.borderColor = '#bfdbfe'
+                        e.currentTarget.style.background = '#f8faff'
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      if (selected !== lang.code) {
+                        e.currentTarget.style.borderColor = '#f1f5f9'
+                        e.currentTarget.style.background = '#fafafa'
+                      }
+                    }}
+                  >
+                    <div>
+                      <div style={{
+                        fontWeight: '600', fontSize: '1.05rem',
+                        color: selected === lang.code ? '#1e40af' : '#1e293b',
+                      }}>{lang.native}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontFamily: 'sans-serif', marginTop: '0.15rem' }}>{lang.sub}</div>
+                    </div>
+                    <div style={{
+                      width: '22px', height: '22px', borderRadius: '50%',
+                      border: selected === lang.code ? '2px solid #3b82f6' : '2px solid #e2e8f0',
+                      background: selected === lang.code ? '#3b82f6' : 'transparent',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'all 0.2s ease', flexShrink: 0,
+                    }}>
+                      {selected === lang.code && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'white' }} />}
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={handleContinue}
+                disabled={!selected}
+                style={{
+                  width: '100%', padding: '0.95rem', borderRadius: '10px', border: 'none',
+                  background: selected ? 'linear-gradient(135deg, #1e40af, #3b82f6)' : '#f1f5f9',
+                  color: selected ? '#fff' : '#94a3b8',
+                  fontSize: '0.95rem', fontWeight: '600',
+                  cursor: selected ? 'pointer' : 'not-allowed',
+                  fontFamily: 'sans-serif', letterSpacing: '0.02em',
+                  transition: 'all 0.3s ease',
+                  boxShadow: selected ? '0 8px 24px rgba(30,64,175,0.3)' : 'none',
+                }}
+                onMouseEnter={e => { if (selected) e.currentTarget.style.transform = 'translateY(-1px)' }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)' }}
+              >
+                {selected ? `Get Started in ${languages.find(l => l.code === selected)?.label} →` : 'Select a Language'}
+              </button>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.5rem', marginTop: '1.25rem' }}>
+                {['🔒 Secure', '⚡ Fast', '🇮🇳 India-First'].map(item => (
+                  <span key={item} style={{ fontSize: '0.72rem', color: '#94a3b8', fontFamily: 'sans-serif' }}>{item}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <footer style={{
+        padding: '1.1rem 3rem', borderTop: '1px solid #e2e8f0',
+        background: 'white',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        position: 'relative', zIndex: 1,
+      }}>
+        <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontFamily: 'sans-serif' }}>
+          © 2025 Union Bank of India · EchoSense AI
+        </span>
+        <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontFamily: 'sans-serif' }}>
+          Powered by Groq AI · English & Hindi
+        </span>
+      </footer>
 
       <style>{`
         @keyframes pulse {
-          0%, 100% { transform: scale(1); opacity: 0.8; }
-          50% { transform: scale(1.1); opacity: 1; }
-        }
-        @keyframes glow {
-          0%, 100% { box-shadow: 0 0 40px rgba(30,100,255,0.4), 0 0 80px rgba(124,58,237,0.2); }
-          50% { box-shadow: 0 0 60px rgba(30,100,255,0.6), 0 0 120px rgba(124,58,237,0.3); }
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.6; transform: scale(1.2); }
         }
       `}</style>
     </div>
