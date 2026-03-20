@@ -71,6 +71,7 @@ export default function Chat() {
   const [customerData, setCustomerData] = useState(null)
   const [customerLoading, setCustomerLoading] = useState(false)
   const [customerError, setCustomerError] = useState('')
+  const [showIdentityPanel, setShowIdentityPanel] = useState(false)
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 768)
@@ -334,16 +335,28 @@ export default function Chat() {
       </header>
 
       {!agentMode && (
-        <div style={{ padding: isMobile ? '0.6rem 0.9rem' : '0.75rem 1.75rem', background: 'white', borderBottom: '1px solid #f1f5f9', display: 'flex', gap: '0.55rem', overflowX: 'auto', flexShrink: 0, scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }}>
+        <div style={{
+          padding: isMobile ? '0.6rem 0.9rem' : '0.75rem 1.75rem',
+          background: 'white',
+          borderBottom: '1px solid #f1f5f9',
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(7, max-content)',
+          gap: '0.55rem',
+          overflowX: isMobile ? 'visible' : 'auto',
+          flexShrink: 0,
+          WebkitOverflowScrolling: 'touch',
+          alignItems: 'stretch',
+        }}>
           {quickActions.map(action => (
             <button key={action.label} onClick={() => sendMessage(action.label)}
               style={{
                 padding: isMobile ? '0.6rem 0.9rem' : '0.45rem 0.9rem', borderRadius: '8px', border: '1px solid #e2e8f0',
-                background: 'white', color: '#475569', cursor: 'pointer', whiteSpace: 'nowrap',
+                background: 'white', color: '#475569', cursor: 'pointer', whiteSpace: isMobile ? 'normal' : 'nowrap',
                 fontSize: isMobile ? '0.8rem' : '0.78rem', fontFamily: 'sans-serif', fontWeight: '600',
                 display: 'flex', alignItems: 'center', gap: '0.35rem', transition: 'all 0.2s ease',
                 minHeight: isMobile ? '44px' : 'auto',
-                scrollSnapAlign: 'start',
+                justifyContent: isMobile ? 'center' : 'flex-start',
+                textAlign: isMobile ? 'center' : 'left',
               }}
               onMouseEnter={e => { e.currentTarget.style.background = '#eff6ff'; e.currentTarget.style.borderColor = '#bfdbfe'; e.currentTarget.style.color = '#1d4ed8' }}
               onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.color = '#475569' }}
@@ -362,44 +375,104 @@ export default function Chat() {
           display: 'flex', alignItems: isMobile ? 'stretch' : 'center', gap: '0.75rem', flexWrap: 'wrap',
           flexDirection: isMobile ? 'column' : 'row',
         }}>
-          <span style={{ fontSize: '0.78rem', color: '#92400e', fontFamily: 'sans-serif', fontWeight: '500', whiteSpace: isMobile ? 'normal' : 'nowrap' }}>
-            🔐 Enter Customer ID for personalised responses:
-          </span>
-          <div style={{ display: 'flex', gap: '0.45rem', alignItems: 'center', width: isMobile ? '100%' : 'auto' }}>
-            <input
-              type="number"
-              placeholder="e.g. 42"
-              value={customerIdInput}
-              onChange={e => { setCustomerIdInput(e.target.value); setCustomerError('') }}
-              onKeyDown={e => e.key === 'Enter' && fetchCustomer()}
-              style={{
-                padding: isMobile ? '0.62rem 0.7rem' : '0.3rem 0.7rem', borderRadius: '8px', border: `1px solid ${customerError ? '#fca5a5' : '#fde68a'}`,
-                background: 'white', color: '#1e293b', fontSize: '0.82rem',
-                outline: 'none', width: isMobile ? '100%' : '90px', fontFamily: 'sans-serif',
-                minHeight: isMobile ? '44px' : 'auto',
-              }}
-            />
-            <button
-              onClick={fetchCustomer}
-              disabled={customerLoading || !customerIdInput.trim()}
-              style={{
-                padding: isMobile ? '0.62rem 0.9rem' : '0.3rem 0.8rem', borderRadius: '8px', border: 'none',
-                background: customerIdInput.trim() ? '#1e40af' : '#e2e8f0',
-                color: customerIdInput.trim() ? '#fff' : '#94a3b8',
-                fontSize: '0.78rem', fontFamily: 'sans-serif', fontWeight: '600',
-                cursor: customerIdInput.trim() ? 'pointer' : 'not-allowed',
-                minHeight: isMobile ? '44px' : 'auto',
-              }}
-            >
-              {customerLoading ? '...' : 'Verify →'}
-            </button>
-            {customerError && (
-              <span style={{ fontSize: '0.72rem', color: '#dc2626', fontFamily: 'sans-serif' }}>{customerError}</span>
-            )}
-          </div>
-          <span style={{ fontSize: '0.7rem', color: '#b45309', fontFamily: 'sans-serif', marginLeft: isMobile ? 0 : 'auto' }}>
-            Skip to chat without personalisation
-          </span>
+          {isMobile ? (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.6rem', width: '100%' }}>
+                <span style={{ fontSize: '0.78rem', color: '#92400e', fontFamily: 'sans-serif', fontWeight: '600' }}>
+                  🔐 Add customer context
+                </span>
+                <button
+                  onClick={() => setShowIdentityPanel(v => !v)}
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    borderRadius: '8px',
+                    border: '1px solid #fcd34d',
+                    background: '#fff',
+                    color: '#92400e',
+                    fontSize: '0.76rem',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    minHeight: '40px',
+                  }}
+                >
+                  {showIdentityPanel ? 'Hide' : 'Verify ID'}
+                </button>
+              </div>
+              {showIdentityPanel && (
+                <div style={{ display: 'flex', gap: '0.45rem', alignItems: 'center', width: '100%' }}>
+                  <input
+                    type="number"
+                    placeholder="e.g. 42"
+                    value={customerIdInput}
+                    onChange={e => { setCustomerIdInput(e.target.value); setCustomerError('') }}
+                    onKeyDown={e => e.key === 'Enter' && fetchCustomer()}
+                    style={{
+                      padding: '0.62rem 0.7rem', borderRadius: '8px', border: `1px solid ${customerError ? '#fca5a5' : '#fde68a'}`,
+                      background: 'white', color: '#1e293b', fontSize: '0.82rem',
+                      outline: 'none', width: '100%', fontFamily: 'sans-serif',
+                      minHeight: '44px',
+                    }}
+                  />
+                  <button
+                    onClick={fetchCustomer}
+                    disabled={customerLoading || !customerIdInput.trim()}
+                    style={{
+                      padding: '0.62rem 0.9rem', borderRadius: '8px', border: 'none',
+                      background: customerIdInput.trim() ? '#1e40af' : '#e2e8f0',
+                      color: customerIdInput.trim() ? '#fff' : '#94a3b8',
+                      fontSize: '0.78rem', fontFamily: 'sans-serif', fontWeight: '600',
+                      cursor: customerIdInput.trim() ? 'pointer' : 'not-allowed',
+                      minHeight: '44px',
+                    }}
+                  >
+                    {customerLoading ? '...' : 'Verify'}
+                  </button>
+                </div>
+              )}
+              {customerError && (
+                <span style={{ fontSize: '0.72rem', color: '#dc2626', fontFamily: 'sans-serif' }}>{customerError}</span>
+              )}
+            </>
+          ) : (
+            <>
+              <span style={{ fontSize: '0.78rem', color: '#92400e', fontFamily: 'sans-serif', fontWeight: '500', whiteSpace: 'nowrap' }}>
+                🔐 Enter Customer ID for personalised responses:
+              </span>
+              <div style={{ display: 'flex', gap: '0.45rem', alignItems: 'center', width: 'auto' }}>
+                <input
+                  type="number"
+                  placeholder="e.g. 42"
+                  value={customerIdInput}
+                  onChange={e => { setCustomerIdInput(e.target.value); setCustomerError('') }}
+                  onKeyDown={e => e.key === 'Enter' && fetchCustomer()}
+                  style={{
+                    padding: '0.3rem 0.7rem', borderRadius: '8px', border: `1px solid ${customerError ? '#fca5a5' : '#fde68a'}`,
+                    background: 'white', color: '#1e293b', fontSize: '0.82rem',
+                    outline: 'none', width: '90px', fontFamily: 'sans-serif',
+                  }}
+                />
+                <button
+                  onClick={fetchCustomer}
+                  disabled={customerLoading || !customerIdInput.trim()}
+                  style={{
+                    padding: '0.3rem 0.8rem', borderRadius: '8px', border: 'none',
+                    background: customerIdInput.trim() ? '#1e40af' : '#e2e8f0',
+                    color: customerIdInput.trim() ? '#fff' : '#94a3b8',
+                    fontSize: '0.78rem', fontFamily: 'sans-serif', fontWeight: '600',
+                    cursor: customerIdInput.trim() ? 'pointer' : 'not-allowed',
+                  }}
+                >
+                  {customerLoading ? '...' : 'Verify →'}
+                </button>
+                {customerError && (
+                  <span style={{ fontSize: '0.72rem', color: '#dc2626', fontFamily: 'sans-serif' }}>{customerError}</span>
+                )}
+              </div>
+              <span style={{ fontSize: '0.7rem', color: '#b45309', fontFamily: 'sans-serif', marginLeft: 'auto' }}>
+                Skip to chat without personalisation
+              </span>
+            </>
+          )}
         </div>
       )}
 
