@@ -1,7 +1,12 @@
 import { createHmac, randomBytes } from 'crypto'
+import '../config/env.js'
 
 const ACCESS_TOKEN_TTL_SECONDS = Number(process.env.ACCESS_TOKEN_TTL_SECONDS || 900)
-const TOKEN_SECRET = process.env.AUTH_TOKEN_SECRET || 'change-me-in-production'
+const TOKEN_SECRET = String(process.env.AUTH_TOKEN_SECRET || '').trim()
+
+if (!TOKEN_SECRET || TOKEN_SECRET === 'change-me-in-production') {
+  throw new Error('AUTH_TOKEN_SECRET must be set to a strong secret before starting the backend.')
+}
 
 function base64UrlEncode(value) {
   return Buffer.from(value)

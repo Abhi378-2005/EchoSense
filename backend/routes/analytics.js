@@ -5,6 +5,8 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { parse } from 'csv-parse/sync'
+import { findUserById, linkUserToCustomer } from '../auth/store.js'
+import { createRateLimiter } from '../middleware/rateLimit.js'
 
 const router = express.Router()
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -87,7 +89,7 @@ function loadAndCompute() {
     .sort((a, b) => new Date(b['Transaction Date']) - new Date(a['Transaction Date']))
     .slice(0, 10)
     .map(r => ({
-      id: r['TransactionID'], name: `${r['First Name']} ${r['Last Name']}`,
+      id: r['TransactionID'], name: `Customer ${r['Customer ID']}`,
       type: r['Transaction Type'], amount: parseFloat(r['Transaction Amount']).toFixed(2),
       date: r['Transaction Date'], accountType: r['Account Type'], anomaly: r['Anomaly'] === '-1',
     }))
@@ -131,6 +133,20 @@ Accounts: ${accountByType.Savings || 0} savings, ${accountByType.Current || 0} c
 
 loadAndCompute()
 
+const customerLookupRateLimit = createRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: 60,
+  keyGenerator: req => `customer:${req.ip}:${req.authUser?.id || 'unknown'}`,
+  message: 'Too many customer lookups. Please try again later.',
+})
+
+const verifyCustomerRateLimit = createRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: 15,
+  keyGenerator: req => `verify:${req.ip}:${req.authUser?.id || 'unknown'}`,
+  message: 'Too many verification attempts. Please wait before trying again.',
+})
+
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
 router.get('/', (req, res) => {
@@ -144,10 +160,24 @@ router.get('/summary', (req, res) => {
 })
 
 // ── Customer lookup by ID ─────────────────────────────────────────────────────
-router.get('/customer/:id', (req, res) => {
+router.get('/customer/:id', customerLookupRateLimit, (req, res) => {
   const { id } = req.params
+  const authUser = findUserById(req.authUser?.id)
+
+  if (!authUser) {
+    return res.status(401).json({ error: 'User not found.' })
+  }
+
   if (!/^\d+$/.test(id)) {
     return res.status(400).json({ error: 'Customer ID must be numeric.' })
+  }
+
+  if (!authUser.linkedCustomerId) {
+    return res.status(403).json({ error: 'Identity verification is required before viewing customer data.' })
+  }
+
+  if (String(authUser.linkedCustomerId) !== String(id)) {
+    return res.status(403).json({ error: 'You are not allowed to access this customer record.' })
   }
 
   const customer = ROWS.find(r => r['Customer ID'] === id)
@@ -200,7 +230,13 @@ function normalizeDateInput(value) {
   return text.toLowerCase()
 }
 
-router.post('/verify-customer', (req, res) => {
+router.post('/verify-customer', verifyCustomerRateLimit, (req, res) => {
+  const authUser = findUserById(req.authUser?.id)
+
+  if (!authUser) {
+    return res.status(401).json({ error: 'User not found.' })
+  }
+
   const normalizedInput = {
     customerId: String(req.body?.customerId || '').trim(),
     aadhaarNumber: normalizeDigits(req.body?.aadhaarNumber),
@@ -229,7 +265,7 @@ router.post('/verify-customer', (req, res) => {
   for (const [key, value] of providedEntries) {
     const validation = fieldValidators[key](value)
     if (validation !== true) {
-      return res.status(400).json({ error: validation })
+      return res.status(400).json({ error: 'One or more provided fields are not in a valid format.' })
     }
   }
 
@@ -242,28 +278,37 @@ router.post('/verify-customer', (req, res) => {
     contactNumber: row => normalizeDigits(row['Contact Number']),
   }
 
-  const matches = ROWS.filter(row =>
+  const candidateRows = authUser.linkedCustomerId
+    ? ROWS.filter(row => String(row['Customer ID'] || '').trim() === String(authUser.linkedCustomerId))
+    : ROWS
+
+  const matches = candidateRows.filter(row =>
     providedEntries.every(([key, value]) => fieldExtractors[key](row) === value),
   )
 
   if (matches.length === 0) {
     return res.status(401).json({
-      error: 'Verification failed. If one field is not remembered, try another CSV field and provide any 3 exact fields.',
+      error: 'Verification failed. Please provide any 3 exact CSV fields. If one field is not remembered, replace it with another CSV field.',
     })
   }
 
   if (matches.length > 1) {
-    const missingFields = ['customerId', 'aadhaarNumber', 'panCard', 'dateOfBirth', 'email', 'contactNumber']
-      .filter(field => !normalizedInput[field])
-
-    return res.status(409).json({
-      error: 'Multiple matches found. Please provide one more field from CSV for precise verification.',
-      missingFields,
-      matchedCount: matches.length,
+    return res.status(401).json({
+      error: 'Verification failed. Please provide any 3 exact CSV fields. If one field is not remembered, replace it with another CSV field.',
     })
   }
 
   const customer = matches[0]
+  const matchedCustomerId = String(customer['Customer ID'] || '').trim()
+
+  if (authUser.linkedCustomerId && String(authUser.linkedCustomerId) !== matchedCustomerId) {
+    return res.status(403).json({ error: 'Verification failed for this account.' })
+  }
+
+  if (!authUser.linkedCustomerId) {
+    linkUserToCustomer(authUser.id, matchedCustomerId)
+  }
+
   return res.json({
     verified: true,
     usedFields: providedEntries.map(([key]) => key),

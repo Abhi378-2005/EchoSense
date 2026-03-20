@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { io } from 'socket.io-client'
-import api, { API_BASE } from '../lib/api'
+import api, { API_BASE, getAccessToken } from '../lib/api'
 import { useAuth } from '../auth/AuthContext'
 
 const BACKEND_URL = API_BASE
@@ -83,7 +83,9 @@ export default function Chat() {
   }, [messages])
 
   useEffect(() => {
-    socketRef.current = io(BACKEND_URL)
+    socketRef.current = io(BACKEND_URL, {
+      auth: callback => callback({ token: getAccessToken() }),
+    })
     socketRef.current.on('agent_joined', (data) => {
       setEscalating(false)
       setAgentMode(true)

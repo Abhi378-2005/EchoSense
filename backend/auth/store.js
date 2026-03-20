@@ -66,6 +66,7 @@ export function createUser({ name, email, passwordHash, passwordSalt }) {
     email: normalizedEmail,
     passwordHash,
     passwordSalt,
+    linkedCustomerId: null,
     createdAt: new Date().toISOString(),
   }
 
@@ -84,8 +85,25 @@ export function sanitizeUser(user) {
     id: user.id,
     name: user.name,
     email: user.email,
+    linkedCustomerId: user.linkedCustomerId || null,
     createdAt: user.createdAt,
   }
+}
+
+export function linkUserToCustomer(userId, customerId) {
+  const users = getUsers()
+  const index = users.findIndex(user => user.id === userId)
+
+  if (index === -1) {
+    return null
+  }
+
+  const normalizedCustomerId = String(customerId || '').trim()
+  users[index].linkedCustomerId = normalizedCustomerId || null
+  users[index].linkedCustomerLinkedAt = normalizedCustomerId ? new Date().toISOString() : null
+  writeJson(usersPath, users)
+
+  return users[index]
 }
 
 export function getSessions() {

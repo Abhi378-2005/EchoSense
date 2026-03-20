@@ -1,15 +1,15 @@
 import express from 'express'
 import cors from 'cors'
-import dotenv from 'dotenv'
 import { createServer } from 'http'
 import { Server } from 'socket.io'
+import './config/env.js'
 import chatRoute from './routes/chat.js'
 import complaintRoute from './routes/complaints.js'
 import analyticsRoute from './routes/analytics.js'
 import authRoute from './routes/auth.js'
 import { requireAuth } from './middleware/auth.js'
-
-dotenv.config()
+import { verifyAccessToken } from './auth/token.js'
+import { findUserById, sanitizeUser } from './auth/store.js'
 
 const app = express()
 const httpServer = createServer(app)
@@ -57,6 +57,30 @@ const io = new Server(httpServer, {
   },
 })
 
+io.use((socket, next) => {
+  const handshakeToken = String(socket.handshake.auth?.token || '').trim()
+  const headerToken = String(socket.handshake.headers?.authorization || '').trim()
+  const rawToken = handshakeToken || headerToken
+  const token = rawToken.toLowerCase().startsWith('bearer ') ? rawToken.slice(7).trim() : rawToken
+
+  if (!token) {
+    return next(new Error('Authentication required for socket connection.'))
+  }
+
+  const verification = verifyAccessToken(token)
+  if (!verification.valid || !verification.payload?.sub) {
+    return next(new Error('Invalid or expired access token.'))
+  }
+
+  const user = findUserById(verification.payload.sub)
+  if (!user) {
+    return next(new Error('User not found.'))
+  }
+
+  socket.data.authUser = sanitizeUser(user)
+  return next()
+})
+
 app.use((req, res, next) => {
   const start = Date.now()
   console.log(`${req.method} ${req.originalUrl}`)
@@ -98,7 +122,7 @@ const agentResponses = [
 ]
 
 io.on('connection', socket => {
-  console.log(`Socket connected: ${socket.id}`)
+  console.log(`Socket connected: ${socket.id} user=${socket.data.authUser?.id || 'unknown'}`)
 
   socket.on('escalate_to_agent', () => {
     setTimeout(() => {

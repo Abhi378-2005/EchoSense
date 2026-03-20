@@ -30,9 +30,16 @@ const loginRateLimit = createRateLimiter({
   max: 8,
   keyGenerator: req => {
     const email = String(req.body?.email || '').trim().toLowerCase()
-    return `${req.ip}:${email || 'unknown'}`
+    return `login:${req.ip}:${email || 'unknown'}`
   },
   message: 'Too many login attempts. Please wait 10 minutes and try again.',
+})
+
+const registerRateLimit = createRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: 10,
+  keyGenerator: req => `register:${req.ip}`,
+  message: 'Too many registration attempts. Please wait 10 minutes and try again.',
 })
 
 function isValidEmail(value) {
@@ -100,7 +107,7 @@ function createSessionForUser(user, req, res) {
   }
 }
 
-router.post('/register', async (req, res) => {
+router.post('/register', registerRateLimit, async (req, res) => {
   const name = String(req.body?.name || '').trim()
   const email = normalizeEmail(req.body?.email)
   const password = String(req.body?.password || '')
@@ -118,7 +125,7 @@ router.post('/register', async (req, res) => {
   }
 
   if (findUserByEmail(email)) {
-    return res.status(409).json({ error: 'An account with this email already exists.' })
+    return res.status(409).json({ error: 'Unable to create account with provided details.' })
   }
 
   try {
