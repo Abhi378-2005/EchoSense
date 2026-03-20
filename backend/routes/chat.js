@@ -32,11 +32,30 @@ function sanitizeHistory(history) {
     .map(item => ({ role: item.role, content: item.content.slice(0, 1200) }))
 }
 
+function isAccountNumberQuery(text) {
+  const normalized = String(text || '').toLowerCase()
+  return /\b(account\s*number|account\s*no|a\/c\s*number|a\/c\s*no|ac\s*number|ac\s*no)\b/.test(normalized)
+}
+
 router.post('/', async (req, res) => {
   const { message, language, history = [], customerData } = req.body
 
   if (typeof message !== 'string' || !message.trim()) {
     return res.status(400).json({ error: 'Message is required.' })
+  }
+
+  if (isAccountNumberQuery(message)) {
+    if (customerData?.customerId) {
+      const reply = language === 'hi'
+        ? `Is demo dataset me alag account number field nahi hai. Aapka account reference Customer ID ${customerData.customerId} hai.`
+        : `This demo dataset does not include a separate account number field. Your account reference is Customer ID ${customerData.customerId}.`
+      return res.json({ reply })
+    }
+
+    const reply = language === 'hi'
+      ? 'Is demo dataset me account number alag field me available nahi hai. System account reference ke liye Customer ID use karta hai.'
+      : 'This demo dataset does not have a separate account number field. The system uses Customer ID as the account reference.'
+    return res.json({ reply })
   }
 
   const liveSummary = getSummary()
@@ -71,7 +90,8 @@ BEHAVIOR RULES:
 - For sensitive actions, say you will verify identity first.
 - If unsure, offer to connect to a live agent.
 - Keep responses to 3-4 sentences max.
-- Always offer further help at the end.
+- For direct data questions (like balance, account number, loan status), answer only what was asked.
+- Do not add branch/app/agent suggestions unless the user asks for alternatives.
 - For branch locator, always assume the customer is in India. If customer city is known, use it. Otherwise suggest visiting unionbankofindia.co.in or calling 1800 22 2244.
 - Preferred language from UI: ${language === 'hi' ? 'Hindi' : 'English'}
 
