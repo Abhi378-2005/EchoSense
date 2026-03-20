@@ -5,6 +5,8 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { parse } from 'csv-parse/sync'
+import { findUserById, linkUserToCustomer } from '../auth/store.js'
+import { createRateLimiter } from '../middleware/rateLimit.js'
 
 const router = express.Router()
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -58,7 +60,9 @@ function loadAndCompute() {
   const resolutionByStatus = groupCount('Resolution Status')
   const totalComplaints = count('Feedback Type', 'Complaint')
   const resolvedComplaints = ROWS.filter(r => r['Feedback Type'] === 'Complaint' && r['Resolution Status'] === 'Resolved').length
-  const complaintResolutionRate = ((resolvedComplaints / totalComplaints) * 100).toFixed(1)
+  const complaintResolutionRate = totalComplaints
+    ? ((resolvedComplaints / totalComplaints) * 100).toFixed(1)
+    : '0.0'
 
   const resolutionByFeedbackType = {}
   ;['Complaint', 'Suggestion', 'Praise'].forEach(type => {
@@ -85,7 +89,7 @@ function loadAndCompute() {
     .sort((a, b) => new Date(b['Transaction Date']) - new Date(a['Transaction Date']))
     .slice(0, 10)
     .map(r => ({
-      id: r['TransactionID'], name: `${r['First Name']} ${r['Last Name']}`,
+      id: r['TransactionID'], name: `Customer ${r['Customer ID']}`,
       type: r['Transaction Type'], amount: parseFloat(r['Transaction Amount']).toFixed(2),
       date: r['Transaction Date'], accountType: r['Account Type'], anomaly: r['Anomaly'] === '-1',
     }))
@@ -129,6 +133,20 @@ Accounts: ${accountByType.Savings || 0} savings, ${accountByType.Current || 0} c
 
 loadAndCompute()
 
+const customerLookupRateLimit = createRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: 60,
+  keyGenerator: req => `customer:${req.ip}:${req.authUser?.id || 'unknown'}`,
+  message: 'Too many customer lookups. Please try again later.',
+})
+
+const verifyCustomerRateLimit = createRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: 15,
+  keyGenerator: req => `verify:${req.ip}:${req.authUser?.id || 'unknown'}`,
+  message: 'Too many verification attempts. Please wait before trying again.',
+})
+
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
 router.get('/', (req, res) => {
@@ -142,8 +160,26 @@ router.get('/summary', (req, res) => {
 })
 
 // ── Customer lookup by ID ─────────────────────────────────────────────────────
-router.get('/customer/:id', (req, res) => {
+router.get('/customer/:id', customerLookupRateLimit, (req, res) => {
   const { id } = req.params
+  const authUser = findUserById(req.authUser?.id)
+
+  if (!authUser) {
+    return res.status(401).json({ error: 'User not found.' })
+  }
+
+  if (!/^\d+$/.test(id)) {
+    return res.status(400).json({ error: 'Customer ID must be numeric.' })
+  }
+
+  if (!authUser.linkedCustomerId) {
+    return res.status(403).json({ error: 'Identity verification is required before viewing customer data.' })
+  }
+
+  if (String(authUser.linkedCustomerId) !== String(id)) {
+    return res.status(403).json({ error: 'You are not allowed to access this customer record.' })
+  }
+
   const customer = ROWS.find(r => r['Customer ID'] === id)
 
   if (!customer) {
@@ -167,6 +203,125 @@ router.get('/customer/:id', (req, res) => {
     creditCardBalance:      parseFloat(customer['Credit Card Balance']).toFixed(2),
     rewardsPoints:          customer['Rewards Points'],
     city:                   customer['City'],
+  })
+})
+
+function normalizeDigits(value) {
+  return String(value || '').replace(/\D/g, '')
+}
+
+function normalizePan(value) {
+  return String(value || '').trim().toUpperCase()
+}
+
+function normalizeEmail(value) {
+  return String(value || '').trim().toLowerCase()
+}
+
+function normalizeDateInput(value) {
+  const text = String(value || '').trim()
+  if (!text) return ''
+
+  const parts = text.split(/[/-]/).map(part => part.trim())
+  if (parts.length === 3 && parts.every(part => /^\d+$/.test(part))) {
+    return `${Number(parts[0])}-${Number(parts[1])}-${Number(parts[2])}`
+  }
+
+  return text.toLowerCase()
+}
+
+router.post('/verify-customer', verifyCustomerRateLimit, (req, res) => {
+  const authUser = findUserById(req.authUser?.id)
+
+  if (!authUser) {
+    return res.status(401).json({ error: 'User not found.' })
+  }
+
+  const normalizedInput = {
+    customerId: String(req.body?.customerId || '').trim(),
+    aadhaarNumber: normalizeDigits(req.body?.aadhaarNumber),
+    panCard: normalizePan(req.body?.panCard),
+    dateOfBirth: normalizeDateInput(req.body?.dateOfBirth),
+    email: normalizeEmail(req.body?.email),
+    contactNumber: normalizeDigits(req.body?.contactNumber),
+  }
+
+  const providedEntries = Object.entries(normalizedInput).filter(([, value]) => Boolean(value))
+  if (providedEntries.length < 3) {
+    return res.status(400).json({
+      error: 'Provide at least any 3 CSV fields for verification.',
+    })
+  }
+
+  const fieldValidators = {
+    customerId: value => /^\d+$/.test(value) || 'Customer ID must be numeric.',
+    aadhaarNumber: value => /^\d{12}$/.test(value) || 'Aadhaar Number must be 12 digits.',
+    panCard: value => /^[A-Z]{5}\d{4}[A-Z]$/.test(value) || 'PAN Card must be in format ABCDE1234F.',
+    dateOfBirth: value => Boolean(value) || 'Date of Birth is required.',
+    email: value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) || 'Email must be valid.',
+    contactNumber: value => /^\d{10}$/.test(value) || 'Contact Number must be 10 digits.',
+  }
+
+  for (const [key, value] of providedEntries) {
+    const validation = fieldValidators[key](value)
+    if (validation !== true) {
+      return res.status(400).json({ error: 'One or more provided fields are not in a valid format.' })
+    }
+  }
+
+  const fieldExtractors = {
+    customerId: row => String(row['Customer ID'] || '').trim(),
+    aadhaarNumber: row => normalizeDigits(row['Aadhaar Number']),
+    panCard: row => normalizePan(row['PAN Card']),
+    dateOfBirth: row => normalizeDateInput(row['Date of Birth']),
+    email: row => normalizeEmail(row['Email']),
+    contactNumber: row => normalizeDigits(row['Contact Number']),
+  }
+
+  const candidateRows = authUser.linkedCustomerId
+    ? ROWS.filter(row => String(row['Customer ID'] || '').trim() === String(authUser.linkedCustomerId))
+    : ROWS
+
+  const matches = candidateRows.filter(row =>
+    providedEntries.every(([key, value]) => fieldExtractors[key](row) === value),
+  )
+
+  if (matches.length === 0) {
+    return res.status(401).json({
+      error: 'Verification failed. Please provide any 3 exact CSV fields. If one field is not remembered, replace it with another CSV field.',
+    })
+  }
+
+  if (matches.length > 1) {
+    return res.status(401).json({
+      error: 'Verification failed. Please provide any 3 exact CSV fields. If one field is not remembered, replace it with another CSV field.',
+    })
+  }
+
+  const customer = matches[0]
+  const matchedCustomerId = String(customer['Customer ID'] || '').trim()
+
+  if (authUser.linkedCustomerId && String(authUser.linkedCustomerId) !== matchedCustomerId) {
+    return res.status(403).json({ error: 'Verification failed for this account.' })
+  }
+
+  if (!authUser.linkedCustomerId) {
+    linkUserToCustomer(authUser.id, matchedCustomerId)
+  }
+
+  return res.json({
+    verified: true,
+    usedFields: providedEntries.map(([key]) => key),
+    customer: {
+      customerId: customer['Customer ID'],
+      name: `${customer['First Name']} ${customer['Last Name']}`,
+      email: customer['Email'],
+      accountType: customer['Account Type'],
+      accountBalance: parseFloat(customer['Account Balance']).toFixed(2),
+      city: customer['City'],
+      lastTransactionDate: customer['Last Transaction Date'],
+    },
+    note: 'This dataset has no separate account-number column. Use Customer ID as account reference.',
   })
 })
 

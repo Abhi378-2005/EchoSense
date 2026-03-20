@@ -22,10 +22,17 @@ const stats = [
 export default function Landing() {
   const [selected, setSelected] = useState(null)
   const [mounted, setMounted] = useState(false)
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
   const navigate = useNavigate()
 
   useEffect(() => {
     setTimeout(() => setMounted(true), 100)
+  }, [])
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
   }, [])
 
   const handleContinue = () => {
@@ -55,8 +62,9 @@ export default function Landing() {
       <div style={{ height: '4px', background: 'linear-gradient(90deg, #1e40af, #3b82f6, #1e40af)', position: 'relative', zIndex: 1 }} />
 
       <header style={{
-        padding: '1rem 3rem',
+        padding: isMobile ? '0.85rem 0.9rem' : '1rem 3rem',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        gap: '0.8rem', flexWrap: isMobile ? 'wrap' : 'nowrap',
         borderBottom: '1px solid #e2e8f0',
         background: 'rgba(255,255,255,0.9)',
         backdropFilter: 'blur(12px)',
@@ -74,15 +82,32 @@ export default function Landing() {
             <div style={{ fontSize: '0.68rem', color: '#94a3b8', letterSpacing: '0.08em', fontFamily: 'sans-serif' }}>AI SELF SERVICE PORTAL</div>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => navigate('/auth')}
+            style={{
+              padding: '0.6rem 1rem', borderRadius: '8px',
+              border: '1px solid #bfdbfe', background: '#eff6ff',
+              color: '#1e40af', cursor: 'pointer', fontSize: '0.82rem',
+              fontFamily: 'sans-serif', fontWeight: '600',
+              minHeight: '44px',
+              flex: isMobile ? 1 : 'unset',
+              minWidth: isMobile ? '140px' : 'auto',
+            }}
+          >
+            Login
+          </button>
           <button
             onClick={() => navigate('/dashboard')}
             style={{
-              padding: '0.5rem 1.25rem', borderRadius: '6px',
+              padding: '0.6rem 1.1rem', borderRadius: '8px',
               border: '1px solid #e2e8f0', background: 'white',
               color: '#475569', cursor: 'pointer', fontSize: '0.85rem',
               fontFamily: 'sans-serif', fontWeight: '500',
               transition: 'all 0.2s ease',
+              minHeight: '44px',
+              flex: isMobile ? 1 : 'unset',
+              minWidth: isMobile ? '140px' : 'auto',
             }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = '#3b82f6'; e.currentTarget.style.color = '#1e40af' }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.color = '#475569' }}
@@ -93,6 +118,8 @@ export default function Landing() {
             display: 'flex', alignItems: 'center', gap: '0.4rem',
             padding: '0.35rem 0.75rem', borderRadius: '50px',
             background: '#f0fdf4', border: '1px solid #bbf7d0',
+            width: isMobile ? '100%' : 'auto',
+            justifyContent: isMobile ? 'center' : 'flex-start',
           }}>
             <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e', animation: 'pulse 2s infinite' }} />
             <span style={{ fontSize: '0.75rem', color: '#15803d', fontFamily: 'sans-serif', fontWeight: '600' }}>AI Assistant Online</span>
@@ -101,12 +128,12 @@ export default function Landing() {
       </header>
 
       <main style={{
-        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '3rem 2rem', position: 'relative', zIndex: 1,
+        flex: 1, display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'center',
+        padding: isMobile ? '1.4rem 0.9rem 2rem' : '3rem 2rem', position: 'relative', zIndex: 1,
       }}>
         <div style={{
-          display: 'grid', gridTemplateColumns: '1fr 1fr',
-          gap: '5rem', maxWidth: '1100px', width: '100%',
+          display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+          gap: isMobile ? '1.4rem' : '5rem', maxWidth: '1100px', width: '100%',
           alignItems: 'center',
         }}>
 
@@ -127,7 +154,7 @@ export default function Landing() {
             </div>
 
             <h1 style={{
-              fontSize: '3.8rem', fontWeight: '700',
+              fontSize: isMobile ? '2.35rem' : '3.8rem', fontWeight: '700',
               color: '#0f172a', lineHeight: '1.1',
               letterSpacing: '-0.03em', marginBottom: '1.5rem',
             }}>
@@ -139,22 +166,23 @@ export default function Landing() {
             </h1>
 
             <p style={{
-              color: '#64748b', fontSize: '1rem', lineHeight: '1.7',
+              color: '#64748b', lineHeight: '1.7',
               marginBottom: '2rem', fontFamily: 'sans-serif', fontWeight: '400',
-              maxWidth: '420px',
+              maxWidth: '420px', fontSize: isMobile ? '0.95rem' : '1rem',
             }}>
               EchoSense is your AI-powered banking assistant for Union Bank of India — available in English and Hindi, 24/7.
             </p>
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '2.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'auto auto auto auto', gap: '0.5rem', marginBottom: '2.2rem' }}>
               {features.map(f => (
                 <div key={f.label} style={{
                   display: 'flex', alignItems: 'center', gap: '0.4rem',
-                  padding: '0.45rem 0.9rem', borderRadius: '6px',
+                  padding: isMobile ? '0.55rem 0.75rem' : '0.45rem 0.9rem', borderRadius: '8px',
                   background: 'white', border: '1px solid #e2e8f0',
                   fontSize: '0.8rem', color: '#475569',
                   fontFamily: 'sans-serif',
                   boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                  minHeight: isMobile ? '44px' : 'auto',
                 }}>
                   <span>{f.icon}</span>
                   <span style={{ fontWeight: '500' }}>{f.label}</span>
@@ -164,10 +192,10 @@ export default function Landing() {
 
             <div style={{ height: '1px', background: '#e2e8f0', marginBottom: '1.75rem' }} />
 
-            <div style={{ display: 'flex', gap: '2.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr 1fr' : 'auto auto auto', gap: isMobile ? '0.75rem' : '2.5rem' }}>
               {stats.map(s => (
                 <div key={s.label}>
-                  <div style={{ fontSize: '1.6rem', fontWeight: '700', color: '#1e40af', letterSpacing: '-0.02em' }}>{s.value}</div>
+                  <div style={{ fontSize: isMobile ? '1.25rem' : '1.6rem', fontWeight: '700', color: '#1e40af', letterSpacing: '-0.02em' }}>{s.value}</div>
                   <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontFamily: 'sans-serif', marginTop: '0.1rem' }}>{s.label}</div>
                 </div>
               ))}
@@ -182,7 +210,7 @@ export default function Landing() {
           }}>
             <div style={{
               background: 'white', borderRadius: '20px',
-              border: '1px solid #e2e8f0', padding: '2.25rem',
+              border: '1px solid #e2e8f0', padding: isMobile ? '1.2rem' : '2.25rem',
               boxShadow: '0 20px 60px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.04)',
             }}>
               <div style={{
@@ -208,7 +236,7 @@ export default function Landing() {
                     key={lang.code}
                     onClick={() => setSelected(lang.code)}
                     style={{
-                      padding: '1rem 1.25rem', borderRadius: '10px',
+                      padding: isMobile ? '0.95rem 1rem' : '1rem 1.25rem', borderRadius: '10px',
                       border: selected === lang.code ? '2px solid #3b82f6' : '2px solid #f1f5f9',
                       background: selected === lang.code ? '#eff6ff' : '#fafafa',
                       cursor: 'pointer', textAlign: 'left',
@@ -217,6 +245,7 @@ export default function Landing() {
                       opacity: mounted ? 1 : 0,
                       transform: mounted ? 'translateX(0)' : 'translateX(16px)',
                       transitionDelay: `${0.3 + i * 0.1}s`,
+                      minHeight: isMobile ? '52px' : 'auto',
                     }}
                     onMouseEnter={e => {
                       if (selected !== lang.code) {
@@ -255,7 +284,7 @@ export default function Landing() {
                 onClick={handleContinue}
                 disabled={!selected}
                 style={{
-                  width: '100%', padding: '0.95rem', borderRadius: '10px', border: 'none',
+                  width: '100%', padding: isMobile ? '1rem' : '0.95rem', borderRadius: '10px', border: 'none',
                   background: selected ? 'linear-gradient(135deg, #1e40af, #3b82f6)' : '#f1f5f9',
                   color: selected ? '#fff' : '#94a3b8',
                   fontSize: '0.95rem', fontWeight: '600',
@@ -263,6 +292,7 @@ export default function Landing() {
                   fontFamily: 'sans-serif', letterSpacing: '0.02em',
                   transition: 'all 0.3s ease',
                   boxShadow: selected ? '0 8px 24px rgba(30,64,175,0.3)' : 'none',
+                  minHeight: isMobile ? '46px' : 'auto',
                 }}
                 onMouseEnter={e => { if (selected) e.currentTarget.style.transform = 'translateY(-1px)' }}
                 onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)' }}
@@ -281,15 +311,16 @@ export default function Landing() {
       </main>
 
       <footer style={{
-        padding: '1.1rem 3rem', borderTop: '1px solid #e2e8f0',
+        padding: isMobile ? '0.9rem 0.9rem calc(1.1rem + env(safe-area-inset-bottom, 0px))' : '1.1rem 3rem', borderTop: '1px solid #e2e8f0',
         background: 'white',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        gap: '0.5rem', flexWrap: 'wrap',
         position: 'relative', zIndex: 1,
       }}>
-        <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontFamily: 'sans-serif' }}>
+        <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontFamily: 'sans-serif', textAlign: isMobile ? 'center' : 'left', width: isMobile ? '100%' : 'auto' }}>
           © 2025 Union Bank of India · EchoSense AI
         </span>
-        <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontFamily: 'sans-serif' }}>
+        <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontFamily: 'sans-serif', textAlign: isMobile ? 'center' : 'left', width: isMobile ? '100%' : 'auto' }}>
           Powered by Groq AI · English & Hindi
         </span>
       </footer>
