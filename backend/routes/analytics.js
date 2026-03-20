@@ -58,7 +58,9 @@ function loadAndCompute() {
   const resolutionByStatus = groupCount('Resolution Status')
   const totalComplaints = count('Feedback Type', 'Complaint')
   const resolvedComplaints = ROWS.filter(r => r['Feedback Type'] === 'Complaint' && r['Resolution Status'] === 'Resolved').length
-  const complaintResolutionRate = ((resolvedComplaints / totalComplaints) * 100).toFixed(1)
+  const complaintResolutionRate = totalComplaints
+    ? ((resolvedComplaints / totalComplaints) * 100).toFixed(1)
+    : '0.0'
 
   const resolutionByFeedbackType = {}
   ;['Complaint', 'Suggestion', 'Praise'].forEach(type => {
@@ -144,6 +146,10 @@ router.get('/summary', (req, res) => {
 // ── Customer lookup by ID ─────────────────────────────────────────────────────
 router.get('/customer/:id', (req, res) => {
   const { id } = req.params
+  if (!/^\d+$/.test(id)) {
+    return res.status(400).json({ error: 'Customer ID must be numeric.' })
+  }
+
   const customer = ROWS.find(r => r['Customer ID'] === id)
 
   if (!customer) {

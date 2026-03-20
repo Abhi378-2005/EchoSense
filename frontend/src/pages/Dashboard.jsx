@@ -1,299 +1,199 @@
-// frontend/src/pages/Dashboard.jsx
-// Fetches live data from /api/analytics — no hardcoded numbers
-
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { useEffect, useMemo, useState } from 'react'
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend, LineChart, Line, CartesianGrid,
-} from "recharts";
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
+import api from '../lib/api'
 
-const API = import.meta.env.VITE_BACKEND_URL || "https://echosense-backend-hwja.onrender.com";
+const COLORS = ['#2563eb', '#16a34a', '#f59e0b', '#dc2626', '#7c3aed']
 
-// ─── Color palette ────────────────────────────────────────────────────────────
-const COLORS = {
-  blue: "#2563EB",
-  green: "#16A34A",
-  red: "#DC2626",
-  amber: "#D97706",
-  purple: "#7C3AED",
-  slate: "#475569",
-};
-const PIE_COLORS = [COLORS.blue, COLORS.green, COLORS.amber, COLORS.red, COLORS.purple];
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function StatCard({ title, value, subtitle, color = COLORS.blue, icon }) {
+function StatCard({ title, value, subtitle, accent }) {
   return (
     <div style={{
-      background: "#fff",
-      border: "1px solid #E2E8F0",
+      background: '#fff',
+      border: '1px solid #dbe2ef',
       borderRadius: 12,
-      padding: "20px 24px",
-      display: "flex",
-      flexDirection: "column",
-      gap: 6,
-      boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+      padding: '14px 16px',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
     }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <span style={{ fontSize: 13, color: "#64748B", fontWeight: 500 }}>{title}</span>
-        <span style={{ fontSize: 22 }}>{icon}</span>
-      </div>
-      <div style={{ fontSize: 28, fontWeight: 700, color, fontFamily: "Georgia, serif" }}>{value}</div>
-      {subtitle && <div style={{ fontSize: 12, color: "#94A3B8" }}>{subtitle}</div>}
+      <div style={{ color: '#64748b', fontSize: 12 }}>{title}</div>
+      <div style={{ color: accent || '#0f172a', fontSize: 24, fontWeight: 700, marginTop: 4 }}>{value}</div>
+      {subtitle && <div style={{ color: '#94a3b8', fontSize: 12, marginTop: 4 }}>{subtitle}</div>}
     </div>
-  );
-}
-
-function SectionTitle({ children }) {
-  return (
-    <h2 style={{
-      fontSize: 16, fontWeight: 700, color: "#1E3A5F",
-      margin: "28px 0 12px", fontFamily: "Georgia, serif",
-      borderLeft: `4px solid ${COLORS.blue}`, paddingLeft: 10,
-    }}>
-      {children}
-    </h2>
-  );
+  )
 }
 
 function ChartCard({ title, children, height = 260 }) {
   return (
-    <div style={{
-      background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12,
-      padding: "20px 24px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+    <section style={{
+      background: '#fff',
+      border: '1px solid #dbe2ef',
+      borderRadius: 12,
+      padding: '14px 16px',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
     }}>
-      <div style={{ fontSize: 14, fontWeight: 600, color: "#374151", marginBottom: 16 }}>{title}</div>
+      <h3 style={{ margin: '0 0 12px', fontSize: 14, color: '#334155' }}>{title}</h3>
       <div style={{ height }}>{children}</div>
-    </div>
-  );
+    </section>
+  )
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-
 export default function Dashboard() {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
 
   useEffect(() => {
-    axios.get(`${API}/api/analytics`)
-      .then(res => { setData(res.data); setLoading(false); })
-      .catch(() => { setError("Failed to load analytics."); setLoading(false); });
-  }, []);
+    api.get('/api/analytics')
+      .then(res => {
+        setData(res.data)
+        setLoading(false)
+      })
+      .catch(err => {
+        setError(err.response?.data?.error || 'Failed to load analytics')
+        setLoading(false)
+      })
+  }, [])
 
-  if (loading) return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#F8FAFC" }}>
-      <div style={{ textAlign: "center" }}>
-        <div style={{ fontSize: 36, marginBottom: 12 }}>🏦</div>
-        <div style={{ color: "#64748B", fontSize: 15 }}>Loading live analytics…</div>
-      </div>
-    </div>
-  );
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
-  if (error) return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#F8FAFC" }}>
-      <div style={{ color: COLORS.red, fontSize: 15 }}>⚠️ {error}</div>
-    </div>
-  );
+  const layoutColumns = isMobile ? '1fr' : '1fr 1fr 1fr'
 
-  const { transactions: tx, loans, complaints, anomalies, accounts, recentActivity, meta } = data;
+  const fmtMoney = amount => {
+    const num = Number(amount || 0)
+    if (num >= 10000000) return `Rs ${(num / 10000000).toFixed(1)} Cr`
+    if (num >= 100000) return `Rs ${(num / 100000).toFixed(1)} L`
+    return `Rs ${num.toLocaleString()}`
+  }
 
-  // ── Chart data shapes ──────────────────────────────────────────────────────
-  const txByTypeData = Object.entries(tx.byType).map(([name, value]) => ({ name, value }));
-  const loanStatusData = Object.entries(loans.byStatus).map(([name, value]) => ({ name, value }));
-  const loanTypeData = Object.entries(loans.byType).map(([name, value]) => ({ name, value }));
-  const feedbackData = Object.entries(complaints.byType).map(([name, value]) => ({ name, value }));
-  const anomalyData = [
-    { name: "Normal", value: anomalies.normal },
-    { name: "Flagged", value: anomalies.flagged },
-  ];
-  const resolutionData = Object.entries(complaints.resolutionByFeedbackType).map(
-    ([type, d]) => ({ type, Resolved: d.resolved, Pending: d.total - d.resolved })
-  );
-  const cardData = Object.entries(accounts.byCard).map(([name, value]) => ({ name, value }));
-  const monthlyData = tx.monthlyVolume.map(m => ({
-    month: m.month.slice(5), // "MM"
-    transactions: m.count,
-  }));
+  const chartData = useMemo(() => {
+    if (!data) return null
 
-  const fmt = (n) => n >= 1e7 ? `₹${(n / 1e7).toFixed(1)}Cr` : n >= 1e5 ? `₹${(n / 1e5).toFixed(1)}L` : `₹${Number(n).toLocaleString()}`;
+    const { transactions, loans, complaints, anomalies, accounts } = data
+
+    return {
+      txByType: Object.entries(transactions.byType).map(([name, value]) => ({ name, value })),
+      loanStatus: Object.entries(loans.byStatus).map(([name, value]) => ({ name, value })),
+      feedback: Object.entries(complaints.byType).map(([name, value]) => ({ name, value })),
+      anomaly: [
+        { name: 'Normal', value: anomalies.normal },
+        { name: 'Flagged', value: anomalies.flagged },
+      ],
+      accountType: Object.entries(accounts.byType).map(([name, value]) => ({ name, value })),
+      monthly: transactions.monthlyVolume.map(item => ({ month: item.month.slice(5), count: item.count })),
+    }
+  }, [data])
+
+  if (loading) {
+    return <div style={centerStyle}>Loading analytics...</div>
+  }
+
+  if (error) {
+    return <div style={centerStyle}>{error}</div>
+  }
+
+  const { transactions, loans, complaints, anomalies, recentActivity, meta } = data
 
   return (
-    <div style={{ minHeight: "100vh", background: "#F8FAFC", fontFamily: "Inter, sans-serif" }}>
-      {/* Header */}
-      <div style={{
-        background: "#1E3A5F", color: "#fff", padding: "18px 32px",
-        display: "flex", alignItems: "center", justifyContent: "space-between",
+    <div style={{ minHeight: '100vh', background: '#f8fafc', fontFamily: 'Inter, sans-serif' }}>
+      <header style={{
+        background: '#0f3a67',
+        color: '#fff',
+        padding: isMobile ? '12px 14px' : '16px 28px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: 12,
+        flexWrap: 'wrap',
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontSize: 26 }}>🏦</span>
-          <div>
-            <div style={{ fontFamily: "Georgia, serif", fontSize: 18, fontWeight: 700 }}>EchoSense Analytics</div>
-            <div style={{ fontSize: 12, color: "#93C5FD" }}>Union Bank of India — Live Dashboard</div>
-          </div>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: isMobile ? 16 : 18 }}>EchoSense Analytics</div>
+          <div style={{ color: '#bfdbfe', fontSize: 12 }}>Union Bank of India</div>
         </div>
-        <div style={{ fontSize: 12, color: "#93C5FD" }}>
-          {meta.totalCustomers.toLocaleString()} customers &nbsp;|&nbsp; Updated: {new Date(meta.generatedAt).toLocaleTimeString()}
+        <div style={{ color: '#bfdbfe', fontSize: 12 }}>
+          {meta.totalCustomers.toLocaleString()} customers | Updated {new Date(meta.generatedAt).toLocaleTimeString()}
         </div>
-      </div>
+      </header>
 
-      <div style={{ maxWidth: 1280, margin: "0 auto", padding: "24px 32px" }}>
+      <main style={{ maxWidth: 1280, margin: '0 auto', padding: isMobile ? '16px 12px' : '24px 28px' }}>
+        <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+          <StatCard title="Total Customers" value={meta.totalCustomers.toLocaleString()} subtitle="Active accounts" />
+          <StatCard title="Total Transactions" value={transactions.total.toLocaleString()} subtitle={`Avg Rs ${transactions.avgAmount.toLocaleString()}`} />
+          <StatCard title="Transaction Volume" value={fmtMoney(transactions.totalAmount)} subtitle={`Deposits ${fmtMoney(transactions.totalDeposits)}`} accent="#15803d" />
+          <StatCard title="Loan Approval" value={`${loans.approvalRate}%`} subtitle={`${loans.byStatus.Approved || 0} approved`} accent="#15803d" />
+          <StatCard title="Complaint Resolution" value={`${complaints.complaintResolutionRate}%`} subtitle={`${complaints.pendingComplaints} pending`} accent="#b45309" />
+          <StatCard title="Anomalies" value={anomalies.flagged.toLocaleString()} subtitle={`${anomalies.rate}% flagged`} accent="#b91c1c" />
+        </section>
 
-        {/* ── KPI Cards ── */}
-        <SectionTitle>📊 Overview</SectionTitle>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
-          <StatCard title="Total Customers" value={meta.totalCustomers.toLocaleString()} icon="👥" subtitle="Active accounts" />
-          <StatCard title="Total Transactions" value={tx.total.toLocaleString()} icon="💳" subtitle={`Avg ₹${tx.avgAmount.toLocaleString()}`} />
-          <StatCard title="Transaction Volume" value={fmt(tx.totalAmount)} icon="💰" color={COLORS.green} subtitle={`Deposits: ${fmt(tx.totalDeposits)}`} />
-          <StatCard title="Loan Approval Rate" value={`${loans.approvalRate}%`} icon="✅" color={COLORS.green} subtitle={`${loans.byStatus.Approved?.toLocaleString()} approved`} />
-          <StatCard title="Complaint Resolution" value={`${complaints.complaintResolutionRate}%`} icon="🎯" color={COLORS.amber} subtitle={`${complaints.pendingComplaints} pending`} />
-          <StatCard title="Anomalies Flagged" value={anomalies.flagged.toLocaleString()} icon="🚨" color={COLORS.red} subtitle={`${anomalies.rate}% of transactions`} />
-        </div>
-
-        {/* ── Transactions ── */}
-        <SectionTitle>💳 Transaction Analytics</SectionTitle>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+        <section style={{ marginTop: 14, display: 'grid', gridTemplateColumns: layoutColumns, gap: 12 }}>
           <ChartCard title="Transactions by Type">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={txByTypeData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                  {txByTypeData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} />)}
+                <Pie data={chartData.txByType} dataKey="value" nameKey="name" outerRadius={isMobile ? 72 : 90}>
+                  {chartData.txByType.map((_, idx) => <Cell key={idx} fill={COLORS[idx % COLORS.length]} />)}
                 </Pie>
                 <Tooltip />
               </PieChart>
             </ResponsiveContainer>
           </ChartCard>
 
-          <ChartCard title="Transaction Volume by Type (₹)">
+          <ChartCard title="Loan Status">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={Object.entries(tx.amountByType).map(([name, value]) => ({ name, value }))}>
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis tickFormatter={v => `₹${(v / 1e6).toFixed(0)}M`} tick={{ fontSize: 11 }} />
-                <Tooltip formatter={v => fmt(v)} />
-                <Bar dataKey="value" fill={COLORS.blue} radius={[4, 4, 0, 0]} />
-              </BarChart>
+              <PieChart>
+                <Pie data={chartData.loanStatus} dataKey="value" nameKey="name" outerRadius={isMobile ? 72 : 90}>
+                  {chartData.loanStatus.map((_, idx) => <Cell key={idx} fill={COLORS[idx % COLORS.length]} />)}
+                </Pie>
+                <Tooltip />
+              </PieChart>
             </ResponsiveContainer>
           </ChartCard>
 
-          <ChartCard title="Monthly Transaction Volume">
+          <ChartCard title="Monthly Transactions">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
+              <LineChart data={chartData.monthly}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="month" />
+                <YAxis />
                 <Tooltip />
-                <Line type="monotone" dataKey="transactions" stroke={COLORS.blue} strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="count" stroke="#2563eb" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </ChartCard>
-        </div>
+        </section>
 
-        {/* ── Loans ── */}
-        <SectionTitle>🏠 Loan Portfolio</SectionTitle>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
-          <ChartCard title="Loan Status Breakdown">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={loanStatusData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                  <Cell fill={COLORS.green} />
-                  <Cell fill={COLORS.red} />
-                  <Cell fill={COLORS.slate} />
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </ChartCard>
-
-          <ChartCard title="Loans by Type">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={loanTypeData} layout="vertical">
-                <XAxis type="number" tick={{ fontSize: 11 }} />
-                <YAxis dataKey="name" type="category" tick={{ fontSize: 12 }} width={70} />
-                <Tooltip />
-                <Bar dataKey="value" fill={COLORS.purple} radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartCard>
-
-          <ChartCard title="Loan Amount by Type (₹)">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={Object.entries(loans.amountByType).map(([name, value]) => ({ name, value }))}>
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis tickFormatter={v => `${(v / 1e9).toFixed(1)}B`} tick={{ fontSize: 11 }} />
-                <Tooltip formatter={v => fmt(v)} />
-                <Bar dataKey="value" fill={COLORS.amber} radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartCard>
-        </div>
-
-        {/* ── Complaints ── */}
-        <SectionTitle>📋 Complaint Analytics</SectionTitle>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+        <section style={{ marginTop: 12, display: 'grid', gridTemplateColumns: layoutColumns, gap: 12 }}>
           <ChartCard title="Feedback Distribution">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={feedbackData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                  {feedbackData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} />)}
+                <Pie data={chartData.feedback} dataKey="value" nameKey="name" outerRadius={isMobile ? 72 : 90}>
+                  {chartData.feedback.map((_, idx) => <Cell key={idx} fill={COLORS[idx % COLORS.length]} />)}
                 </Pie>
                 <Tooltip />
               </PieChart>
             </ResponsiveContainer>
           </ChartCard>
 
-          <ChartCard title="Resolution Rate by Feedback Type">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={resolutionData}>
-                <XAxis dataKey="type" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Bar dataKey="Resolved" fill={COLORS.green} stackId="a" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="Pending" fill={COLORS.red} stackId="a" radius={[4, 4, 0, 0]} />
-                <Legend />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartCard>
-
-          {/* Resolution KPI cards */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {Object.entries(complaints.resolutionByFeedbackType).map(([type, d]) => (
-              <div key={type} style={{
-                background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12,
-                padding: "14px 18px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-              }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>{type}</div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ fontSize: 12, color: "#64748B" }}>{d.resolved}/{d.total} resolved</div>
-                  <div style={{
-                    fontSize: 14, fontWeight: 700,
-                    color: parseFloat(d.rate) >= 50 ? COLORS.green : COLORS.red,
-                  }}>{d.rate}%</div>
-                </div>
-                <div style={{ marginTop: 6, background: "#F1F5F9", borderRadius: 99, height: 6, overflow: "hidden" }}>
-                  <div style={{
-                    width: `${d.rate}%`, height: "100%",
-                    background: parseFloat(d.rate) >= 50 ? COLORS.green : COLORS.red,
-                    borderRadius: 99,
-                  }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ── Anomalies ── */}
-        <SectionTitle>🚨 Anomaly & Fraud Detection</SectionTitle>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
-          <ChartCard title="Normal vs Flagged Transactions">
+          <ChartCard title="Anomaly Split">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={anomalyData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(1)}%`}>
-                  <Cell fill={COLORS.green} />
-                  <Cell fill={COLORS.red} />
+                <Pie data={chartData.anomaly} dataKey="value" nameKey="name" outerRadius={isMobile ? 72 : 90}>
+                  {chartData.anomaly.map((_, idx) => <Cell key={idx} fill={COLORS[idx % COLORS.length]} />)}
                 </Pie>
                 <Tooltip />
                 <Legend />
@@ -301,140 +201,81 @@ export default function Dashboard() {
             </ResponsiveContainer>
           </ChartCard>
 
-          <ChartCard title="Anomalies by Transaction Type">
+          <ChartCard title="Account Types">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={Object.entries(anomalies.byTransactionType).map(([name, value]) => ({ name, value }))}>
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 11 }} />
+              <BarChart data={chartData.accountType}>
+                <XAxis dataKey="name" />
+                <YAxis />
                 <Tooltip />
-                <Bar dataKey="value" fill={COLORS.red} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="value" fill="#2563eb" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </ChartCard>
+        </section>
 
-          {/* Anomaly alert banner */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={{
-              background: "#FEF2F2", border: `1px solid #FECACA`,
-              borderRadius: 12, padding: "18px 20px",
-            }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.red, marginBottom: 4 }}>
-                🚨 Anomaly Alert Summary
-              </div>
-              <div style={{ fontSize: 13, color: "#7F1D1D", lineHeight: 1.7 }}>
-                <div><b>{anomalies.flagged.toLocaleString()}</b> transactions flagged</div>
-                <div>Anomaly rate: <b>{anomalies.rate}%</b></div>
-                <div style={{ marginTop: 8, fontSize: 12, color: "#991B1B" }}>
-                  Flagged transactions are routed to the fraud review team automatically.
-                </div>
-              </div>
-            </div>
-            <div style={{
-              background: "#F0FDF4", border: `1px solid #BBF7D0`,
-              borderRadius: 12, padding: "18px 20px",
-            }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.green, marginBottom: 4 }}>
-                ✅ Clean Transactions
-              </div>
-              <div style={{ fontSize: 24, fontWeight: 700, color: COLORS.green }}>
-                {anomalies.normal.toLocaleString()}
-              </div>
-              <div style={{ fontSize: 12, color: "#166534" }}>
-                {(100 - anomalies.rate).toFixed(2)}% of all transactions are clean
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Accounts & Cards ── */}
-        <SectionTitle>👥 Account & Card Overview</SectionTitle>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
-          <ChartCard title="Account Type Distribution">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={Object.entries(accounts.byType).map(([name, value]) => ({ name, value }))}
-                  dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                  <Cell fill={COLORS.blue} />
-                  <Cell fill={COLORS.purple} />
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </ChartCard>
-
-          <ChartCard title="Card Distribution">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={cardData}>
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                  {cardData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartCard>
-
-          <ChartCard title="Gender Breakdown">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={Object.entries(accounts.byGender).map(([name, value]) => ({ name, value }))}
-                  dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                  {Object.keys(accounts.byGender).map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} />)}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </ChartCard>
-        </div>
-
-        {/* ── Recent Activity Feed ── */}
-        <SectionTitle>⚡ Recent Activity Feed</SectionTitle>
-        <div style={{
-          background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12,
-          overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-        }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ background: "#F8FAFC", borderBottom: "1px solid #E2E8F0" }}>
-                {["Transaction ID", "Customer", "Type", "Amount", "Account", "Date", "Status"].map(h => (
-                  <th key={h} style={{ padding: "12px 16px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "#64748B" }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {recentActivity.map((row, i) => (
-                <tr key={i} style={{
-                  borderBottom: "1px solid #F1F5F9",
-                  background: row.anomaly ? "#FFF7F7" : "transparent",
+        <section style={{ marginTop: 12 }}>
+          <h3 style={{ color: '#334155', marginBottom: 10 }}>Recent Activity</h3>
+          {isMobile ? (
+            <div style={{ display: 'grid', gap: 8 }}>
+              {recentActivity.map((row, idx) => (
+                <div key={idx} style={{
+                  background: '#fff',
+                  border: row.anomaly ? '1px solid #fecaca' : '1px solid #dbe2ef',
+                  borderRadius: 10,
+                  padding: '10px 12px',
                 }}>
-                  <td style={{ padding: "12px 16px", fontSize: 13, color: "#374151", fontFamily: "monospace" }}>#{row.id}</td>
-                  <td style={{ padding: "12px 16px", fontSize: 13, color: "#374151" }}>{row.name}</td>
-                  <td style={{ padding: "12px 16px" }}>
-                    <span style={{
-                      padding: "2px 10px", borderRadius: 99, fontSize: 11, fontWeight: 600,
-                      background: row.type === "Deposit" ? "#DCFCE7" : row.type === "Withdrawal" ? "#FEE2E2" : "#DBEAFE",
-                      color: row.type === "Deposit" ? COLORS.green : row.type === "Withdrawal" ? COLORS.red : COLORS.blue,
-                    }}>{row.type}</span>
-                  </td>
-                  <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 600, color: "#1E3A5F" }}>₹{Number(row.amount).toLocaleString()}</td>
-                  <td style={{ padding: "12px 16px", fontSize: 13, color: "#64748B" }}>{row.accountType}</td>
-                  <td style={{ padding: "12px 16px", fontSize: 12, color: "#94A3B8" }}>{row.date}</td>
-                  <td style={{ padding: "12px 16px" }}>
-                    {row.anomaly
-                      ? <span style={{ color: COLORS.red, fontSize: 12, fontWeight: 600 }}>🚨 Flagged</span>
-                      : <span style={{ color: COLORS.green, fontSize: 12 }}>✅ Clean</span>}
-                  </td>
-                </tr>
+                  <div style={{ fontSize: 12, color: '#64748b' }}>Txn #{row.id}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b' }}>{row.name}</div>
+                  <div style={{ marginTop: 4, fontSize: 13 }}>{row.type} | Rs {Number(row.amount).toLocaleString()}</div>
+                  <div style={{ marginTop: 2, fontSize: 12, color: '#64748b' }}>{row.date}</div>
+                </div>
               ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div style={{ height: 40 }} />
-      </div>
+            </div>
+          ) : (
+            <div style={{ background: '#fff', border: '1px solid #dbe2ef', borderRadius: 12, overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc' }}>
+                    {['Txn', 'Customer', 'Type', 'Amount', 'Account', 'Date', 'Status'].map(header => (
+                      <th key={header} style={{ padding: '10px 12px', textAlign: 'left', fontSize: 12, color: '#64748b' }}>{header}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentActivity.map((row, idx) => (
+                    <tr key={idx} style={{ borderTop: '1px solid #f1f5f9', background: row.anomaly ? '#fff7f7' : '#fff' }}>
+                      <td style={cellStyle}>#{row.id}</td>
+                      <td style={cellStyle}>{row.name}</td>
+                      <td style={cellStyle}>{row.type}</td>
+                      <td style={cellStyle}>Rs {Number(row.amount).toLocaleString()}</td>
+                      <td style={cellStyle}>{row.accountType}</td>
+                      <td style={cellStyle}>{row.date}</td>
+                      <td style={{ ...cellStyle, color: row.anomaly ? '#b91c1c' : '#15803d', fontWeight: 600 }}>
+                        {row.anomaly ? 'Flagged' : 'Clean'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </main>
     </div>
-  );
+  )
+}
+
+const centerStyle = {
+  minHeight: '100vh',
+  display: 'grid',
+  placeItems: 'center',
+  background: '#f8fafc',
+  color: '#475569',
+  fontFamily: 'sans-serif',
+}
+
+const cellStyle = {
+  padding: '10px 12px',
+  fontSize: 13,
+  color: '#334155',
 }

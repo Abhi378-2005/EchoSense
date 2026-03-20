@@ -12,11 +12,16 @@ router.post('/', (req, res) => {
     return res.status(400).json({ error: 'Category and description are required' })
   }
 
+  if (String(description).trim().length > 1200) {
+    return res.status(400).json({ error: 'Description is too long.' })
+  }
+
   const ticket = {
     id: 'UBI-' + Math.floor(Math.random() * 90000 + 10000),
     category,
-    description,
+    description: String(description).trim(),
     language,
+    userId: req.authUser?.id || 'unknown',
     status: 'Open',
     createdAt: new Date().toISOString()
   }
@@ -33,7 +38,8 @@ router.post('/', (req, res) => {
 })
 
 router.get('/', (req, res) => {
-  res.json({ complaints, total: complaints.length })
+  const ownComplaints = complaints.filter(ticket => ticket.userId === req.authUser?.id)
+  res.json({ complaints: ownComplaints, total: ownComplaints.length })
 })
 
 export default router
