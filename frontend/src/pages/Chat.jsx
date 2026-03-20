@@ -36,7 +36,7 @@ export default function Chat() {
   const inputRef = useRef(null)
   const socketRef = useRef(null)
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
-  const controlButtonSize = isMobile ? 44 : 38
+  const controlButtonSize = isMobile ? 40 : 38
 
   const [messages, setMessages] = useState([
     {
@@ -66,12 +66,6 @@ export default function Chat() {
   const [kycLoading, setKycLoading] = useState(false)
   const [generatedOTP, setGeneratedOTP] = useState('')
 
-  // ── Customer ID state ─────────────────────────────────────────────────────
-  const [customerIdInput, setCustomerIdInput] = useState('')
-  const [customerData, setCustomerData] = useState(null)
-  const [customerLoading, setCustomerLoading] = useState(false)
-  const [customerError, setCustomerError] = useState('')
-  const [showIdentityPanel, setShowIdentityPanel] = useState(false)
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 768)
@@ -99,24 +93,6 @@ export default function Chat() {
     return () => socketRef.current.disconnect()
   }, [])
 
-  // ── Fetch customer by ID ──────────────────────────────────────────────────
-  const fetchCustomer = async () => {
-    if (!customerIdInput.trim()) return
-    setCustomerLoading(true)
-    setCustomerError('')
-    try {
-      const res = await api.get(`/api/analytics/customer/${customerIdInput.trim()}`)
-      setCustomerData(res.data)
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: `Welcome back, ${res.data.name}! 👋\n\nI can now see your account details. Feel free to ask about your balance, loan status, card details, or recent transactions.`,
-        timestamp: new Date()
-      }])
-    } catch {
-      setCustomerError('Customer ID not found. Try 1–50000.')
-    }
-    setCustomerLoading(false)
-  }
 
   const sendMessage = async (text) => {
     const userMsg = text || input.trim()
@@ -143,7 +119,6 @@ export default function Chat() {
         message: userMsg,
         history,
         language,
-        customerData,
       })
       const reply = res.data.reply
       setMessages(prev => [...prev, { role: 'assistant', content: reply, timestamp: new Date() }])
@@ -299,12 +274,6 @@ export default function Chat() {
           >
             Logout
           </button>
-          {/* Customer badge */}
-          {customerData && (
-            <div style={{ padding: isMobile ? '0.45rem 0.8rem' : '0.3rem 0.8rem', borderRadius: '50px', background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#16a34a', fontSize: '0.75rem', fontFamily: 'sans-serif', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '600', minHeight: isMobile ? '44px' : 'auto' }}>
-              👤 {customerData.name}
-            </div>
-          )}
           {agentMode && (
             <div style={{ padding: isMobile ? '0.45rem 0.8rem' : '0.3rem 0.8rem', borderRadius: '50px', background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#16a34a', fontSize: '0.75rem', fontFamily: 'sans-serif', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '600', minHeight: isMobile ? '44px' : 'auto' }}>
               <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#22c55e', animation: 'pulse 1.5s infinite' }} />
@@ -367,114 +336,6 @@ export default function Chat() {
         </div>
       )}
 
-      {/* ── Customer ID Banner ─────────────────────────────────────────────── */}
-      {!customerData && (
-        <div style={{
-          padding: isMobile ? '0.6rem 0.9rem' : '0.6rem 1.75rem', background: '#fffbeb',
-          borderBottom: '1px solid #fde68a', flexShrink: 0,
-          display: 'flex', alignItems: isMobile ? 'stretch' : 'center', gap: '0.75rem', flexWrap: 'wrap',
-          flexDirection: isMobile ? 'column' : 'row',
-        }}>
-          {isMobile ? (
-            <>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.6rem', width: '100%' }}>
-                <span style={{ fontSize: '0.78rem', color: '#92400e', fontFamily: 'sans-serif', fontWeight: '600' }}>
-                  🔐 Add customer context
-                </span>
-                <button
-                  onClick={() => setShowIdentityPanel(v => !v)}
-                  style={{
-                    padding: '0.5rem 0.75rem',
-                    borderRadius: '8px',
-                    border: '1px solid #fcd34d',
-                    background: '#fff',
-                    color: '#92400e',
-                    fontSize: '0.76rem',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    minHeight: '40px',
-                  }}
-                >
-                  {showIdentityPanel ? 'Hide' : 'Verify ID'}
-                </button>
-              </div>
-              {showIdentityPanel && (
-                <div style={{ display: 'flex', gap: '0.45rem', alignItems: 'center', width: '100%' }}>
-                  <input
-                    type="number"
-                    placeholder="e.g. 42"
-                    value={customerIdInput}
-                    onChange={e => { setCustomerIdInput(e.target.value); setCustomerError('') }}
-                    onKeyDown={e => e.key === 'Enter' && fetchCustomer()}
-                    style={{
-                      padding: '0.62rem 0.7rem', borderRadius: '8px', border: `1px solid ${customerError ? '#fca5a5' : '#fde68a'}`,
-                      background: 'white', color: '#1e293b', fontSize: '0.82rem',
-                      outline: 'none', width: '100%', fontFamily: 'sans-serif',
-                      minHeight: '44px',
-                    }}
-                  />
-                  <button
-                    onClick={fetchCustomer}
-                    disabled={customerLoading || !customerIdInput.trim()}
-                    style={{
-                      padding: '0.62rem 0.9rem', borderRadius: '8px', border: 'none',
-                      background: customerIdInput.trim() ? '#1e40af' : '#e2e8f0',
-                      color: customerIdInput.trim() ? '#fff' : '#94a3b8',
-                      fontSize: '0.78rem', fontFamily: 'sans-serif', fontWeight: '600',
-                      cursor: customerIdInput.trim() ? 'pointer' : 'not-allowed',
-                      minHeight: '44px',
-                    }}
-                  >
-                    {customerLoading ? '...' : 'Verify'}
-                  </button>
-                </div>
-              )}
-              {customerError && (
-                <span style={{ fontSize: '0.72rem', color: '#dc2626', fontFamily: 'sans-serif' }}>{customerError}</span>
-              )}
-            </>
-          ) : (
-            <>
-              <span style={{ fontSize: '0.78rem', color: '#92400e', fontFamily: 'sans-serif', fontWeight: '500', whiteSpace: 'nowrap' }}>
-                🔐 Enter Customer ID for personalised responses:
-              </span>
-              <div style={{ display: 'flex', gap: '0.45rem', alignItems: 'center', width: 'auto' }}>
-                <input
-                  type="number"
-                  placeholder="e.g. 42"
-                  value={customerIdInput}
-                  onChange={e => { setCustomerIdInput(e.target.value); setCustomerError('') }}
-                  onKeyDown={e => e.key === 'Enter' && fetchCustomer()}
-                  style={{
-                    padding: '0.3rem 0.7rem', borderRadius: '8px', border: `1px solid ${customerError ? '#fca5a5' : '#fde68a'}`,
-                    background: 'white', color: '#1e293b', fontSize: '0.82rem',
-                    outline: 'none', width: '90px', fontFamily: 'sans-serif',
-                  }}
-                />
-                <button
-                  onClick={fetchCustomer}
-                  disabled={customerLoading || !customerIdInput.trim()}
-                  style={{
-                    padding: '0.3rem 0.8rem', borderRadius: '8px', border: 'none',
-                    background: customerIdInput.trim() ? '#1e40af' : '#e2e8f0',
-                    color: customerIdInput.trim() ? '#fff' : '#94a3b8',
-                    fontSize: '0.78rem', fontFamily: 'sans-serif', fontWeight: '600',
-                    cursor: customerIdInput.trim() ? 'pointer' : 'not-allowed',
-                  }}
-                >
-                  {customerLoading ? '...' : 'Verify →'}
-                </button>
-                {customerError && (
-                  <span style={{ fontSize: '0.72rem', color: '#dc2626', fontFamily: 'sans-serif' }}>{customerError}</span>
-                )}
-              </div>
-              <span style={{ fontSize: '0.7rem', color: '#b45309', fontFamily: 'sans-serif', marginLeft: 'auto' }}>
-                Skip to chat without personalisation
-              </span>
-            </>
-          )}
-        </div>
-      )}
 
       <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '1rem 0.8rem' : '1.5rem 1.75rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: '#f8f9fc' }}>
         {messages.map((msg, i) => (
@@ -537,26 +398,28 @@ export default function Chat() {
       </div>
 
       <div style={{ padding: isMobile ? '0.85rem 0.8rem calc(1rem + env(safe-area-inset-bottom, 0px))' : '1rem 1.75rem 1.25rem', background: 'white', borderTop: '1px solid #e2e8f0', flexShrink: 0, boxShadow: '0 -1px 4px rgba(0,0,0,0.04)' }}>
-        <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', background: '#f8f9fc', border: `1.5px solid ${agentMode ? '#bbf7d0' : '#e2e8f0'}`, borderRadius: '12px', padding: isMobile ? '0.45rem 0.45rem 0.45rem 0.75rem' : '0.4rem 0.4rem 0.4rem 1rem', transition: 'border 0.3s ease' }}>
+        <div style={{ display: 'flex', gap: isMobile ? '0.35rem' : '0.6rem', alignItems: 'center', background: '#f8f9fc', border: `1.5px solid ${agentMode ? '#bbf7d0' : '#e2e8f0'}`, borderRadius: '12px', padding: isMobile ? '0.45rem 0.45rem 0.45rem 0.65rem' : '0.4rem 0.4rem 0.4rem 1rem', transition: 'border 0.3s ease', width: '100%', boxSizing: 'border-box', overflow: 'hidden' }}>
           <input
             ref={inputRef}
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-            placeholder={agentMode ? 'Message live agent...' : language === 'hi' ? 'अपना संदेश लिखें...' : 'Type your message...'}
-            style={{ flex: 1, background: 'transparent', border: 'none', color: '#1e293b', fontSize: isMobile ? '16px' : '0.9rem', outline: 'none', fontFamily: 'sans-serif' }}
+            placeholder={agentMode ? 'Message live agent...' : language === 'hi' ? 'Apna sandesh likhen...' : 'Type your message...'}
+            style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', color: '#1e293b', fontSize: isMobile ? '16px' : '0.9rem', outline: 'none', fontFamily: 'sans-serif' }}
           />
-          {!agentMode && (
-            <button onClick={escalateToAgent} disabled={escalating} title="Connect to Live Agent"
-              style={{ width: `${controlButtonSize}px`, height: `${controlButtonSize}px`, borderRadius: '10px', border: 'none', background: escalating ? '#fffbeb' : '#f0fdf4', color: escalating ? '#d97706' : '#16a34a', cursor: escalating ? 'not-allowed' : 'pointer', fontSize: '1rem', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              {escalating ? '⏳' : '👨‍💼'}
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.3rem' : '0.45rem', flexShrink: 0 }}>
+            {!agentMode && (
+              <button onClick={escalateToAgent} disabled={escalating} title="Connect to Live Agent"
+                style={{ width: `${controlButtonSize}px`, height: `${controlButtonSize}px`, borderRadius: '10px', border: 'none', background: escalating ? '#fffbeb' : '#f0fdf4', color: escalating ? '#d97706' : '#16a34a', cursor: escalating ? 'not-allowed' : 'pointer', fontSize: '1rem', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                {escalating ? '\u23F3' : '\u{1F468}\u200D\u{1F4BC}'}
+              </button>
+            )}
+            <button onClick={startListening} style={{ width: `${controlButtonSize}px`, height: `${controlButtonSize}px`, borderRadius: '10px', border: 'none', background: listening ? '#fef2f2' : '#f8f9fc', color: listening ? '#ef4444' : '#94a3b8', cursor: 'pointer', fontSize: '1rem', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: listening ? '0 0 0 3px rgba(239,68,68,0.15)' : 'none', flexShrink: 0 }}>
+              {listening ? '\u{1F534}' : '\u{1F3A4}\uFE0F'}
             </button>
-          )}
-          <button onClick={startListening} style={{ width: `${controlButtonSize}px`, height: `${controlButtonSize}px`, borderRadius: '10px', border: 'none', background: listening ? '#fef2f2' : '#f8f9fc', color: listening ? '#ef4444' : '#94a3b8', cursor: 'pointer', fontSize: '1rem', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: listening ? '0 0 0 3px rgba(239,68,68,0.15)' : 'none', flexShrink: 0 }}>
-            {listening ? '🔴' : '🎙️'}
-          </button>
-          <button onClick={() => sendMessage()} disabled={!input.trim() || loading}
-            style={{ width: `${controlButtonSize}px`, height: `${controlButtonSize}px`, borderRadius: '10px', border: 'none', background: input.trim() && !loading ? agentMode ? 'linear-gradient(135deg, #16a34a, #4ade80)' : 'linear-gradient(135deg, #1e40af, #3b82f6)' : '#f1f5f9', color: input.trim() && !loading ? '#fff' : '#94a3b8', cursor: input.trim() && !loading ? 'pointer' : 'not-allowed', fontSize: '1rem', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: input.trim() && !loading ? '0 4px 12px rgba(30,64,175,0.3)' : 'none', flexShrink: 0 }}>➤</button>
+            <button onClick={() => sendMessage()} disabled={!input.trim() || loading}
+              style={{ width: `${controlButtonSize}px`, height: `${controlButtonSize}px`, borderRadius: '10px', border: 'none', background: input.trim() && !loading ? agentMode ? 'linear-gradient(135deg, #16a34a, #4ade80)' : 'linear-gradient(135deg, #1e40af, #3b82f6)' : '#f1f5f9', color: input.trim() && !loading ? '#fff' : '#94a3b8', cursor: input.trim() && !loading ? 'pointer' : 'not-allowed', fontSize: '1rem', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: input.trim() && !loading ? '0 4px 12px rgba(30,64,175,0.3)' : 'none', flexShrink: 0 }}>{'\u27A4'}</button>
+          </div>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.6rem', padding: '0 0.25rem', gap: '0.5rem' }}>
           {agentMode ? (
