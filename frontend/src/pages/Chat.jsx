@@ -61,10 +61,15 @@ export default function Chat() {
   const [complaintDesc, setComplaintDesc] = useState('')
   const [complaintLoading, setComplaintLoading] = useState(false)
   const [showKYCModal, setShowKYCModal] = useState(false)
-  const [kycStep, setKycStep] = useState(1)
-  const [kycData, setKycData] = useState({ aadhaar: '', pan: '', otp: '' })
+  const [kycData, setKycData] = useState({
+    customerId: '',
+    aadhaarNumber: '',
+    panCard: '',
+    dateOfBirth: '',
+    email: '',
+    contactNumber: '',
+  })
   const [kycLoading, setKycLoading] = useState(false)
-  const [generatedOTP, setGeneratedOTP] = useState('')
 
 
   useEffect(() => {
@@ -105,7 +110,17 @@ export default function Chat() {
     }
     if (userMsg === 'KYC Verification') {
       setMessages(prev => [...prev, { role: 'user', content: userMsg, timestamp: new Date() }])
-      setTimeout(() => { setKycStep(1); setKycData({ aadhaar: '', pan: '', otp: '' }); setShowKYCModal(true) }, 300)
+      setTimeout(() => {
+        setKycData({
+          customerId: '',
+          aadhaarNumber: '',
+          panCard: '',
+          dateOfBirth: '',
+          email: '',
+          contactNumber: '',
+        })
+        setShowKYCModal(true)
+      }, 300)
       setInput('')
       return
     }
@@ -148,24 +163,45 @@ export default function Chat() {
     setComplaintLoading(false)
   }
 
-  const handleKYCNext = () => {
-    if (kycStep === 1) {
-      if (kycData.aadhaar.length !== 12) return alert('Enter valid 12-digit Aadhaar')
-      setKycStep(2)
-    } else if (kycStep === 2) {
-      if (kycData.pan.length !== 10) return alert('Enter valid 10-character PAN')
-      const otp = Math.floor(100000 + Math.random() * 900000).toString()
-      setGeneratedOTP(otp)
-      setKycStep(3)
-      setMessages(prev => [...prev, { role: 'system', content: 'OTP sent to your registered mobile number ending in ****87', timestamp: new Date() }])
-    } else if (kycStep === 3) {
-      if (kycData.otp !== generatedOTP) return alert('Invalid OTP. Demo OTP: ' + generatedOTP)
-      setKycLoading(true)
-      setTimeout(() => { setKycLoading(false); setKycStep(4) }, 2000)
-    } else if (kycStep === 4) {
+  const handleKYCVerify = async () => {
+    const payload = {
+      customerId: kycData.customerId.trim(),
+      aadhaarNumber: kycData.aadhaarNumber.trim(),
+      panCard: kycData.panCard.trim().toUpperCase(),
+      dateOfBirth: kycData.dateOfBirth.trim(),
+      email: kycData.email.trim().toLowerCase(),
+      contactNumber: kycData.contactNumber.trim(),
+    }
+
+    const filledCount = Object.values(payload).filter(Boolean).length
+    if (filledCount < 3) {
+      return alert('Please provide at least any 3 details from CSV for verification.')
+    }
+
+    setKycLoading(true)
+    try {
+      const res = await api.post('/api/analytics/verify-customer', payload)
+      const c = res.data?.customer
       setShowKYCModal(false)
-      setKycStep(1)
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Your KYC verification has been completed successfully! Your account is now fully verified and all banking services are activated. Is there anything else I can help you with?', timestamp: new Date(), isKYC: true }])
+      setKycData({
+        customerId: '',
+        aadhaarNumber: '',
+        panCard: '',
+        dateOfBirth: '',
+        email: '',
+        contactNumber: '',
+      })
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `Verification successful for ${c?.name || 'customer'}.\nCustomer ID: ${c?.customerId || '-'}\nAccount Type: ${c?.accountType || '-'}\nBalance: Rs.${c?.accountBalance || '-'}\n\nVerified using CSV-matched details.`,
+        timestamp: new Date(),
+        isKYC: true,
+      }])
+    } catch (error) {
+      const msg = error?.response?.data?.error || 'Verification failed. Use any 3 exact CSV fields.'
+      setMessages(prev => [...prev, { role: 'system', content: msg, timestamp: new Date() }])
+    } finally {
+      setKycLoading(false)
     }
   }
 
@@ -469,60 +505,59 @@ export default function Chat() {
         <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(15,23,42,0.5)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '0' : '1rem' }}
           onClick={(e) => e.target === e.currentTarget && setShowKYCModal(false)}>
           <div style={{ width: '100%', maxWidth: isMobile ? '100%' : '440px', minHeight: isMobile ? '100%' : 'auto', background: 'white', borderRadius: isMobile ? '0' : '20px', padding: isMobile ? '1rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px))' : '2rem', animation: 'slideUp 0.35s ease', boxShadow: '0 20px 60px rgba(0,0,0,0.2)', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '2rem' }}>
-              {[1, 2, 3, 4].map(s => (
-                <div key={s} style={{ flex: 1, height: '3px', borderRadius: '2px', background: s <= kycStep ? '#3b82f6' : '#f1f5f9', transition: 'background 0.3s ease' }} />
-              ))}
+            <div style={{ marginBottom: '1.25rem' }}>
+              <h2 style={{ fontSize: '1.15rem', fontWeight: '700', color: '#0f172a', marginBottom: '0.4rem' }}>Flexible CSV Verification</h2>
+              <p style={{ color: '#64748b', fontSize: '0.82rem', fontFamily: 'sans-serif', lineHeight: '1.5' }}>
+                Enter any 3 details from CSV. If you do not remember one detail, leave it blank and provide another field instead.
+              </p>
             </div>
-            {kycStep === 1 && (
-              <div>
-                <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>🪪</div>
-                <h2 style={{ fontSize: '1.15rem', fontWeight: '700', color: '#0f172a', marginBottom: '0.4rem' }}>Aadhaar Verification</h2>
-                <p style={{ color: '#64748b', fontSize: '0.82rem', fontFamily: 'sans-serif', marginBottom: '1.5rem' }}>Enter your 12-digit Aadhaar number</p>
-                <input type="number" placeholder="XXXX XXXX XXXX" value={kycData.aadhaar} onChange={e => setKycData(p => ({ ...p, aadhaar: e.target.value.slice(0, 12) }))}
-                  style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '8px', background: '#f8f9fc', border: '1.5px solid #e2e8f0', color: '#1e293b', fontSize: '1.1rem', outline: 'none', letterSpacing: '0.1em', boxSizing: 'border-box', fontFamily: 'sans-serif' }}
-                  onFocus={e => e.target.style.borderColor = '#3b82f6'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
-              </div>
-            )}
-            {kycStep === 2 && (
-              <div>
-                <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>📄</div>
-                <h2 style={{ fontSize: '1.15rem', fontWeight: '700', color: '#0f172a', marginBottom: '0.4rem' }}>PAN Verification</h2>
-                <p style={{ color: '#64748b', fontSize: '0.82rem', fontFamily: 'sans-serif', marginBottom: '1.5rem' }}>Enter your 10-character PAN number</p>
-                <input type="text" placeholder="ABCDE1234F" value={kycData.pan} onChange={e => setKycData(p => ({ ...p, pan: e.target.value.toUpperCase().slice(0, 10) }))}
-                  style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '8px', background: '#f8f9fc', border: '1.5px solid #e2e8f0', color: '#1e293b', fontSize: '1.1rem', outline: 'none', letterSpacing: '0.2em', boxSizing: 'border-box', fontFamily: 'sans-serif' }}
-                  onFocus={e => e.target.style.borderColor = '#3b82f6'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
-              </div>
-            )}
-            {kycStep === 3 && (
-              <div>
-                <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>📱</div>
-                <h2 style={{ fontSize: '1.15rem', fontWeight: '700', color: '#0f172a', marginBottom: '0.4rem' }}>OTP Verification</h2>
-                <p style={{ color: '#64748b', fontSize: '0.82rem', fontFamily: 'sans-serif', marginBottom: '0.4rem' }}>Enter the 6-digit OTP sent to ****87</p>
-                <p style={{ color: '#3b82f6', fontSize: '0.8rem', fontFamily: 'sans-serif', marginBottom: '1.5rem', fontWeight: '600' }}>Demo OTP: {generatedOTP}</p>
-                <input type="number" placeholder="• • • • • •" value={kycData.otp} onChange={e => setKycData(p => ({ ...p, otp: e.target.value.slice(0, 6) }))}
-                  style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '8px', background: '#f8f9fc', border: '1.5px solid #e2e8f0', color: '#1e293b', fontSize: '1.5rem', outline: 'none', letterSpacing: '0.4em', textAlign: 'center', boxSizing: 'border-box', fontFamily: 'sans-serif' }}
-                  onFocus={e => e.target.style.borderColor = '#3b82f6'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
-              </div>
-            )}
-            {kycStep === 4 && (
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: '#f0fdf4', border: '2px solid #bbf7d0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', margin: '0 auto 1.25rem' }}>✅</div>
-                <h2 style={{ fontSize: '1.2rem', fontWeight: '700', color: '#0f172a', marginBottom: '0.4rem' }}>KYC Verified!</h2>
-                <p style={{ color: '#64748b', fontSize: '0.85rem', fontFamily: 'sans-serif', marginBottom: '1.5rem' }}>Your identity has been successfully verified.</p>
-                <div style={{ background: '#f8f9fc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {[{ label: 'Aadhaar', value: '****' + kycData.aadhaar.slice(-4) }, { label: 'PAN', value: kycData.pan.slice(0, 3) + '*****' + kycData.pan.slice(-2) }, { label: 'Status', value: 'Verified ✓' }].map(item => (
-                    <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', fontFamily: 'sans-serif' }}>
-                      <span style={{ color: '#94a3b8' }}>{item.label}</span>
-                      <span style={{ color: item.label === 'Status' ? '#16a34a' : '#334155', fontWeight: '600' }}>{item.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            <button onClick={handleKYCNext} disabled={kycLoading}
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '0.7rem' }}>
+              <input
+                type="number"
+                placeholder="Customer ID"
+                value={kycData.customerId}
+                onChange={e => setKycData(p => ({ ...p, customerId: e.target.value }))}
+                style={{ width: '100%', padding: '0.8rem 0.9rem', borderRadius: '8px', background: '#f8f9fc', border: '1.5px solid #e2e8f0', color: '#1e293b', fontSize: '0.92rem', outline: 'none', boxSizing: 'border-box', fontFamily: 'sans-serif' }}
+              />
+              <input
+                type="number"
+                placeholder="Aadhaar Number"
+                value={kycData.aadhaarNumber}
+                onChange={e => setKycData(p => ({ ...p, aadhaarNumber: e.target.value.slice(0, 12) }))}
+                style={{ width: '100%', padding: '0.8rem 0.9rem', borderRadius: '8px', background: '#f8f9fc', border: '1.5px solid #e2e8f0', color: '#1e293b', fontSize: '0.92rem', outline: 'none', boxSizing: 'border-box', fontFamily: 'sans-serif' }}
+              />
+              <input
+                type="text"
+                placeholder="PAN Card (ABCDE1234F)"
+                value={kycData.panCard}
+                onChange={e => setKycData(p => ({ ...p, panCard: e.target.value.toUpperCase().slice(0, 10) }))}
+                style={{ width: '100%', padding: '0.8rem 0.9rem', borderRadius: '8px', background: '#f8f9fc', border: '1.5px solid #e2e8f0', color: '#1e293b', fontSize: '0.92rem', outline: 'none', boxSizing: 'border-box', fontFamily: 'sans-serif' }}
+              />
+              <input
+                type="text"
+                placeholder="Date of Birth (as in CSV)"
+                value={kycData.dateOfBirth}
+                onChange={e => setKycData(p => ({ ...p, dateOfBirth: e.target.value }))}
+                style={{ width: '100%', padding: '0.8rem 0.9rem', borderRadius: '8px', background: '#f8f9fc', border: '1.5px solid #e2e8f0', color: '#1e293b', fontSize: '0.92rem', outline: 'none', boxSizing: 'border-box', fontFamily: 'sans-serif' }}
+              />
+              <input
+                type="email"
+                placeholder="Email"
+                value={kycData.email}
+                onChange={e => setKycData(p => ({ ...p, email: e.target.value }))}
+                style={{ width: '100%', padding: '0.8rem 0.9rem', borderRadius: '8px', background: '#f8f9fc', border: '1.5px solid #e2e8f0', color: '#1e293b', fontSize: '0.92rem', outline: 'none', boxSizing: 'border-box', fontFamily: 'sans-serif' }}
+              />
+              <input
+                type="text"
+                placeholder="Contact Number"
+                value={kycData.contactNumber}
+                onChange={e => setKycData(p => ({ ...p, contactNumber: e.target.value }))}
+                style={{ width: '100%', padding: '0.8rem 0.9rem', borderRadius: '8px', background: '#f8f9fc', border: '1.5px solid #e2e8f0', color: '#1e293b', fontSize: '0.92rem', outline: 'none', boxSizing: 'border-box', fontFamily: 'sans-serif' }}
+              />
+            </div>
+            <button onClick={handleKYCVerify} disabled={kycLoading}
               style={{ width: '100%', padding: isMobile ? '0.95rem' : '0.9rem', borderRadius: '10px', border: 'none', marginTop: '1.5rem', background: 'linear-gradient(135deg, #1e40af, #3b82f6)', color: '#fff', fontSize: '0.9rem', fontWeight: '600', fontFamily: 'sans-serif', cursor: kycLoading ? 'not-allowed' : 'pointer', opacity: kycLoading ? 0.7 : 1, transition: 'all 0.3s ease', boxShadow: '0 4px 16px rgba(30,64,175,0.3)', minHeight: isMobile ? '46px' : 'auto' }}>
-              {kycLoading ? 'Verifying...' : kycStep === 4 ? 'Done' : 'Continue →'}
+              {kycLoading ? 'Verifying...' : 'Verify (Any 3 Fields)'}
             </button>
           </div>
         </div>

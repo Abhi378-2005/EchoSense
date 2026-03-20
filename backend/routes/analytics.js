@@ -176,6 +176,110 @@ router.get('/customer/:id', (req, res) => {
   })
 })
 
+function normalizeDigits(value) {
+  return String(value || '').replace(/\D/g, '')
+}
+
+function normalizePan(value) {
+  return String(value || '').trim().toUpperCase()
+}
+
+function normalizeEmail(value) {
+  return String(value || '').trim().toLowerCase()
+}
+
+function normalizeDateInput(value) {
+  const text = String(value || '').trim()
+  if (!text) return ''
+
+  const parts = text.split(/[/-]/).map(part => part.trim())
+  if (parts.length === 3 && parts.every(part => /^\d+$/.test(part))) {
+    return `${Number(parts[0])}-${Number(parts[1])}-${Number(parts[2])}`
+  }
+
+  return text.toLowerCase()
+}
+
+router.post('/verify-customer', (req, res) => {
+  const normalizedInput = {
+    customerId: String(req.body?.customerId || '').trim(),
+    aadhaarNumber: normalizeDigits(req.body?.aadhaarNumber),
+    panCard: normalizePan(req.body?.panCard),
+    dateOfBirth: normalizeDateInput(req.body?.dateOfBirth),
+    email: normalizeEmail(req.body?.email),
+    contactNumber: normalizeDigits(req.body?.contactNumber),
+  }
+
+  const providedEntries = Object.entries(normalizedInput).filter(([, value]) => Boolean(value))
+  if (providedEntries.length < 3) {
+    return res.status(400).json({
+      error: 'Provide at least any 3 CSV fields for verification.',
+    })
+  }
+
+  const fieldValidators = {
+    customerId: value => /^\d+$/.test(value) || 'Customer ID must be numeric.',
+    aadhaarNumber: value => /^\d{12}$/.test(value) || 'Aadhaar Number must be 12 digits.',
+    panCard: value => /^[A-Z]{5}\d{4}[A-Z]$/.test(value) || 'PAN Card must be in format ABCDE1234F.',
+    dateOfBirth: value => Boolean(value) || 'Date of Birth is required.',
+    email: value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) || 'Email must be valid.',
+    contactNumber: value => /^\d{10}$/.test(value) || 'Contact Number must be 10 digits.',
+  }
+
+  for (const [key, value] of providedEntries) {
+    const validation = fieldValidators[key](value)
+    if (validation !== true) {
+      return res.status(400).json({ error: validation })
+    }
+  }
+
+  const fieldExtractors = {
+    customerId: row => String(row['Customer ID'] || '').trim(),
+    aadhaarNumber: row => normalizeDigits(row['Aadhaar Number']),
+    panCard: row => normalizePan(row['PAN Card']),
+    dateOfBirth: row => normalizeDateInput(row['Date of Birth']),
+    email: row => normalizeEmail(row['Email']),
+    contactNumber: row => normalizeDigits(row['Contact Number']),
+  }
+
+  const matches = ROWS.filter(row =>
+    providedEntries.every(([key, value]) => fieldExtractors[key](row) === value),
+  )
+
+  if (matches.length === 0) {
+    return res.status(401).json({
+      error: 'Verification failed. If one field is not remembered, try another CSV field and provide any 3 exact fields.',
+    })
+  }
+
+  if (matches.length > 1) {
+    const missingFields = ['customerId', 'aadhaarNumber', 'panCard', 'dateOfBirth', 'email', 'contactNumber']
+      .filter(field => !normalizedInput[field])
+
+    return res.status(409).json({
+      error: 'Multiple matches found. Please provide one more field from CSV for precise verification.',
+      missingFields,
+      matchedCount: matches.length,
+    })
+  }
+
+  const customer = matches[0]
+  return res.json({
+    verified: true,
+    usedFields: providedEntries.map(([key]) => key),
+    customer: {
+      customerId: customer['Customer ID'],
+      name: `${customer['First Name']} ${customer['Last Name']}`,
+      email: customer['Email'],
+      accountType: customer['Account Type'],
+      accountBalance: parseFloat(customer['Account Balance']).toFixed(2),
+      city: customer['City'],
+      lastTransactionDate: customer['Last Transaction Date'],
+    },
+    note: 'This dataset has no separate account-number column. Use Customer ID as account reference.',
+  })
+})
+
 export const getSummary = () => SUMMARY || ''
 
 export default router

@@ -91,7 +91,7 @@ app.get('/', (req, res) => {
 
 const agentResponses = [
   "Hello! I'm Rajesh from Union Bank support. I can see your query. Let me help you right away!",
-  'I have pulled up your account details. Could you please verify your registered mobile number?',
+  'I have pulled up your account details. Please verify using any 3 details from CSV: Customer ID, Aadhaar Number, PAN Card, Date of Birth, Email, or Contact Number.',
   'I understand your concern. I am escalating this to our specialist team and you will receive a callback within 2 hours.',
   'Is there anything else I can help you with today?',
   `I have raised a complaint ticket for you. Your ticket ID is UBI-${Math.floor(Math.random() * 90000 + 10000)}`,
